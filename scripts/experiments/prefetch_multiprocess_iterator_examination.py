@@ -1,4 +1,6 @@
 import numpy
+import multiprocessing
+import logging
 
 from chainer.datasets.image_dataset import ExtendedLabeledImageDataset
 from chainer.iterators._statemachine import IteratorState
@@ -17,16 +19,16 @@ initial_order = order_sampler(numpy.arange(len(dataset)), 0)
 prefetch_state = IteratorState(0, 0, False, initial_order)
 communicator.reset(prefetch_state)
 
-prefetch_pipeline = _PrefetchPipeline(
-    dataset=dataset,
-    batch_size=8,
-    local_storage_base='/Users/kazuhiroserizawa/Documents/python-work/prefetch_pipeline_poc/local_storage',
-    n_prefetch_from_backend=2,
-    n_generate_batch=2,
-    n_remove_example=2,
-    comm=communicator,
-    order_sampler=order_sampler
-)
+# prefetch_pipeline = _PrefetchPipeline(
+#     dataset=dataset,
+#     batch_size=8,
+#     local_storage_base='/Users/kazuhiroserizawa/Documents/python-work/prefetch_pipeline_poc/local_storage',
+#     n_prefetch_from_backend=2,
+#     n_generate_batch=2,
+#     n_remove_example=2,
+#     comm=communicator,
+#     order_sampler=order_sampler
+# )
 # prefetch_pipeline.launch_thread()
 # print(prefetch_pipeline._comm.get()[1])
 # print(prefetch_pipeline._comm.get()[1])
@@ -44,6 +46,8 @@ prefetch_pipeline = _PrefetchPipeline(
 # print(prefetch_pipeline._comm.get()[1])
 # prefetch_pipeline.terminate()
 #
+
+multiprocessing.log_to_stderr(logging.DEBUG)
 
 iterator = PrefetchMultiprocessIterator(
     dataset=dataset,

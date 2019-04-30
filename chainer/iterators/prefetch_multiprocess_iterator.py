@@ -163,7 +163,7 @@ class _Communicator(object):
             self._status = _Communicator.STATUS_RESET
             self._prefetch_state = prefetch_state
             self._batch_queue = []
-            self._not_full_cond.notify_all()
+            self._not_full_cond.notify()
             self._reset_count += 1
 
     # called from iterator
@@ -171,7 +171,7 @@ class _Communicator(object):
         with self._lock:
             self._status = _Communicator.STATUS_TERMINATE
             self._batch_queue = []
-            self._not_full_cond.notify_all()
+            self._not_full_cond.notify()
             self._reset_count += 1
 
     # called from thread
@@ -230,8 +230,8 @@ class _PrefetchPipeline:
                  n_generate_batch, n_remove_example, comm, order_sampler,
                  repeat=True,
                  prefetch_batch_size=100,
-                 waiting_id_queue_max_size=0,
-                 prefetched_id_queue_max_size=0,
+                 waiting_id_queue_max_size=10000,
+                 prefetched_id_queue_max_size=10000,
                  used_id_queue_max_size=10000):
         if type(dataset) is not ExtendedLabeledImageDataset:
             raise AssertionError('This iterator only supports `ExtendedLabeledImageDataset`')
@@ -279,7 +279,7 @@ class _PrefetchPipeline:
             target=self._prefetch_from_backend_loop,
             name='_prefetch_from_backend_loop'
         )
-        self._prefetch_from_backend_thread.daemon=True
+        self._prefetch_from_backend_thread.daemon = True
         self._prefetch_from_backend_thread.start()
 
         self._generate_batch_pool = multiprocessing.Pool(processes=self.n_generate_batch)
@@ -310,6 +310,8 @@ class _PrefetchPipeline:
                        self._generate_random_id_thread]:
             if thread is not None:
                 while thread.is_alive():
+                    print(thread)
+                    print(threading.enumerate())
                     thread.join(_response_time)
         self._launched = False
 
@@ -338,7 +340,7 @@ class _PrefetchPipeline:
                 indices_list = []
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating:
-                    return
+                    break
 
     def _prefetch_from_backend_loop(self):
         alive = True
@@ -405,21 +407,28 @@ class _PrefetchPipeline:
             while True:
                 try:
                     indices = _prefetch_multiprocess_iterator_cached_id_queue.get(timeout=_response_time)
-                    break
                 except queue.Empty:
-                    print('queue.Empty')
                     if _prefetch_multiprocess_iterator_terminating:
                         return False
+                else:
+                    break
 
             future = self._generate_batch_pool.map_async(_generate_batch, indices)
             while True:
                 try:
                     batch = future.get(_response_time)
                 except multiprocessing.TimeoutError:
-                    if self._comm.is_terminated:
+                    if _prefetch_multiprocess_iterator_terminating:
                         return False
                 else:
                     break
+
+            try:
+                _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
+            except queue.Full:
+                if _prefetch_multiprocess_iterator_terminating:
+                    return False
+
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
 
@@ -436,6 +445,14 @@ class _PrefetchPipeline:
             self._remove_example_pool.join()
 
     def _remove_example_task(self):
+        try:
+            if _prefetch_multiprocess_iterator_used_id_queue.full():
+                index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
+                self._remove_example_pool.apply_async(_remove_example, args=[index])
+        except queue.Empty:
+            if _prefetch_multiprocess_iterator_terminating:
+                return False
+
         return True
 
 
@@ -468,14 +485,6 @@ def _generate_batch(index):
 
             data = _pfetch_multiprocess_iterator_fetch_dataset.get_example_by_path(
                 local_storage_file_path,int_label)
-
-            _prefetch_multiprocess_iterator_used_id_queue.put(index, timeout=_response_time)
-        except queue.Empty:
-            if _prefetch_multiprocess_iterator_terminating:
-                break
-        except queue.Full:
-            if _prefetch_multiprocess_iterator_terminating:
-                break
         except FileNotFoundError:
             if _prefetch_multiprocess_iterator_terminating:
                 break
@@ -490,20 +499,15 @@ def _generate_batch(index):
     return data
 
 
-def _remove_example():
-    while True:
-        if not _prefetch_multiprocess_iterator_terminating and _prefetch_multiprocess_iterator_used_id_queue.full():
-            delete_index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
-            path, _ = _pfetch_multiprocess_iterator_fetch_dataset[delete_index]
+def _remove_example(index):
+    if not _prefetch_multiprocess_iterator_terminating:
+        path, _ = _pfetch_multiprocess_iterator_fetch_dataset[index]
 
-            backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root, path)
-            delete_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
-                                                         backend_storage_file_path)
-            if os.path.exists(delete_file_path):
-                try:
-                    os.remove(delete_file_path)
-                except FileNotFoundError:
-                    if _prefetch_multiprocess_iterator_terminating:
-                        break
-
-    return False
+        backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root, path)
+        delete_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
+                                                     backend_storage_file_path)
+        if os.path.exists(delete_file_path):
+            try:
+                os.remove(delete_file_path)
+            except FileNotFoundError:
+                pass
