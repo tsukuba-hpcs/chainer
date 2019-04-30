@@ -1,8 +1,10 @@
 import os
 
 import numpy
+
 try:
     from PIL import Image
+
     available = True
 except ImportError as e:
     available = False
@@ -36,7 +38,6 @@ def _postprocess_image(image):
 
 
 class ImageDataset(dataset_mixin.DatasetMixin):
-
     """Dataset of images built from a list of paths to image files.
 
     This dataset reads an external image file on every call of the
@@ -95,7 +96,6 @@ class ImageDataset(dataset_mixin.DatasetMixin):
 
 
 class LabeledImageDataset(dataset_mixin.DatasetMixin):
-
     """Dataset of image and label pairs built from a list of paths and labels.
 
     This dataset reads an external image file like :class:`ImageDataset`. The
@@ -163,8 +163,23 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
         return _postprocess_image(image), label
 
 
-class LabeledZippedImageDataset(dataset_mixin.DatasetMixin):
+class ExtendedLabeledImageDataset(LabeledImageDataset):
+    @property
+    def pairs(self):
+        return self._pairs
 
+    @property
+    def root(self):
+        return self._root
+
+    def get_example_by_path(self, full_path, int_label):
+        image = _read_image_as_array(full_path, self._dtype)
+
+        label = numpy.array(int_label, dtype=self._label_dtype)
+        return _postprocess_image(image), label
+
+
+class LabeledZippedImageDataset(dataset_mixin.DatasetMixin):
     """Dataset of zipped image and label pairs.
 
     This dataset is zip version of :class:`LabeledImageDataset`. It
