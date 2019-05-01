@@ -327,22 +327,25 @@ class _PrefetchPipeline:
     def _generate_random_id_loop(self):
         indices_list = []
         while not _prefetch_multiprocess_iterator_terminating:
-            if not indices_list:
-                for _ in range(self.prefetch_batch_size):
-                    self._random_id_state, indices = iterator_statemachine(
-                        self._random_id_state,
-                        self.batch_size,
-                        self.repeat,
-                        self.order_sampler,
-                        len(self.dataset)
-                    )
-                    indices_list.append(indices)
-            try:
-                _prefetch_multiprocess_iterator_waiting_id_queue.put(numpy.array(indices_list),
-                                                                     timeout=_response_time)
-                indices_list = []
-            except queue.Full:
-                if _prefetch_multiprocess_iterator_terminating:
+            for _ in range(self.prefetch_batch_size):
+                self._random_id_state, indices = iterator_statemachine(
+                    self._random_id_state,
+                    self.batch_size,
+                    self.repeat,
+                    self.order_sampler,
+                    len(self.dataset)
+                )
+                indices_list.append(indices)
+
+            while True:
+                try:
+                    _prefetch_multiprocess_iterator_waiting_id_queue.put(numpy.array(indices_list),
+                                                                         timeout=_response_time)
+                    indices_list = []
+                except queue.Full:
+                    if _prefetch_multiprocess_iterator_terminating:
+                        break
+                else:
                     break
 
     def _prefetch_from_backend_loop(self):
@@ -357,23 +360,35 @@ class _PrefetchPipeline:
             self._prefetch_from_backend_pool.join()
 
     def _prefetch_from_backend_task(self):
-        try:
-            indices_list = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
-            future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
-            _ = future.get(timeout=_response_time)
+        while True:
+            try:
+                indices_list = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
+            except queue.Empty:
+                if _prefetch_multiprocess_iterator_terminating:
+                    return False
+            else:
+                break
 
-            for indices in indices_list:
-                _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time)
-        except queue.Empty:
-            if _prefetch_multiprocess_iterator_terminating:
-                return False
-        except multiprocessing.TimeoutError:
-            if _prefetch_multiprocess_iterator_terminating:
-                return False
-        except queue.Full:
-            if _prefetch_multiprocess_iterator_terminating:
-                return False
-
+        future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
+        while True:
+            try:
+                _ = future.get(timeout=1.0)
+            except multiprocessing.TimeoutError:
+                if _prefetch_multiprocess_iterator_terminating:
+                    return False
+            else:
+                break
+        
+        for indices in indices_list:
+            while True:
+                try:
+                    _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time) 
+                except queue.Full:
+                    if _prefetch_multiprocess_iterator_terminating:
+                        return False
+                else:
+                    break
+        
         return True
 
     def _generate_batch_loop(self):
@@ -394,7 +409,7 @@ class _PrefetchPipeline:
             self.prefetch_state = prefetch_state
         elif status == _Communicator.STATUS_TERMINATE:
             return False  # stop loop
-
+        
         # Here, indices is used only to decide whether iteration should be stopped or not
         self.prefetch_state, _indices = iterator_statemachine(
             self.prefetch_state, self.batch_size, self.repeat,
@@ -418,18 +433,21 @@ class _PrefetchPipeline:
             future = self._generate_batch_pool.map_async(_generate_batch, indices)
             while True:
                 try:
-                    batch = future.get(_response_time)
+                    batch = future.get(1.0)
                 except multiprocessing.TimeoutError:
                     if _prefetch_multiprocess_iterator_terminating:
                         return False
                 else:
                     break
 
-            try:
-                _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
-            except queue.Full:
-                if _prefetch_multiprocess_iterator_terminating:
-                    return False
+            while True:
+                try:
+                    _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
+                except queue.Full:
+                    if _prefetch_multiprocess_iterator_terminating:
+                        return False
+                else:
+                    break
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
@@ -476,7 +494,6 @@ def _prefetch_from_backend(indices):
             shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
             os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
 
-
 def _generate_batch(index):
     path, int_label = _pfetch_multiprocess_iterator_fetch_dataset.pairs[index]
     backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root, path)
@@ -502,3 +519,4 @@ def _remove_example(index):
                 os.remove(delete_file_path)
             except FileNotFoundError:
                 pass
+
