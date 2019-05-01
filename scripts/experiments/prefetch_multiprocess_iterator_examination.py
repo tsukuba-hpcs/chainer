@@ -47,7 +47,7 @@ communicator.reset(prefetch_state)
 # prefetch_pipeline.terminate()
 #
 
-multiprocessing.log_to_stderr(logging.DEBUG)
+multiprocessing.log_to_stderr(logging.INFO)
 
 iterator = PrefetchMultiprocessIterator(
     dataset=dataset,
