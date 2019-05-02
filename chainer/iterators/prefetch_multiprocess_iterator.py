@@ -3,6 +3,9 @@ import os
 import queue
 import shutil
 import threading
+import time
+import sys
+from multiprocessing import sharedctypes
 
 import numpy
 
@@ -27,11 +30,18 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     _comm = None
     _previous_epoch_detail = -1
 
-    def __init__(self, dataset: ExtendedLabeledImageDataset,
-                 batch_size, local_storage_base,
+    def __init__(self, 
+                 dataset: ExtendedLabeledImageDataset,
+                 batch_size, 
+                 local_storage_base,
                  n_prefetch,
-                 n_prefetch_from_backend, n_generate_batch,
-                 n_remove_example, repeat=True, shuffle=None, dataset_timeout=30.0,
+                 n_prefetch_from_backend, 
+                 n_generate_batch,
+                 n_remove_example, 
+                 repeat=True, 
+                 shuffle=None, 
+                 shared_mem=None,
+                 dataset_timeout=30.0,
                  waiting_id_queue_max_size=1000,
                  prefetched_id_queue_max_size=1000,
                  used_id_queue_max_size=1000
@@ -49,14 +59,22 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.n_generate_batch = n_generate_batch
         self.n_remove_example = n_remove_example
         self.order_sampler = ShuffleOrderSampler()  # fixed, for now
+        self.shared_mem = shared_mem
+        self.dataset_timeout = dataset_timeout
 
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
         self.reset()
 
         self._prefetch_pipeline = _PrefetchPipeline(
-            self.dataset, self.batch_size, self.local_storage_base,
-            self.n_prefetch_from_backend, self.n_generate_batch,
-            self.n_remove_example, self._comm, self.order_sampler,
+            self.dataset, 
+            self.batch_size, 
+            self.local_storage_base,
+            self.n_prefetch_from_backend, 
+            self.n_generate_batch,
+            self.n_remove_example,
+            self.shared_mem,
+            self._comm, 
+            self.order_sampler,
             self.repeat,
             self.n_prefetch,
             waiting_id_queue_max_size,
@@ -65,10 +83,17 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         )
 
     def __next__(self):
+        measure_mode = False
         if not self._prefetch_pipeline.launched:
+            if self._prefetch_pipeline.measure_required():
+                measure_mode = True
+                batch, state = self._prefetch_pipeline.measure(
+                self.dataset_timeout)
             self._prefetch_pipeline.launch_thread()
 
-        batch, state = self._comm.get()
+        if not measure_mode:
+            batch, state = self._comm.get()
+
         self._previous_epoch_detail = self.epoch_detail
         self._state = state
 
@@ -206,6 +231,8 @@ class _Communicator(object):
 
 
 _prefetch_multiprocess_iterator_fetch_dataset = None
+_prefetch_multiprocess_iterator_mem_size = None
+_prefetch_multiprocess_iterator_mem_bulk = None
 _prefetch_multiprocess_iterator_local_storage_base = None
 _prefetch_multiprocess_iterator_terminating = False
 
@@ -226,10 +253,16 @@ class _PrefetchPipeline:
     _terminating = False
     _launched = False
 
-    def __init__(self, dataset: ExtendedLabeledImageDataset,
-                 batch_size, local_storage_base,
+    def __init__(self, 
+                 dataset: ExtendedLabeledImageDataset,
+                 batch_size, 
+                 local_storage_base,
                  n_prefetch_from_backend,
-                 n_generate_batch, n_remove_example, comm, order_sampler,
+                 n_generate_batch, 
+                 n_remove_example, 
+                 mem_size,
+                 comm, 
+                 order_sampler,
                  repeat,
                  prefetch_batch_size,
                  waiting_id_queue_max_size,
@@ -248,10 +281,13 @@ class _PrefetchPipeline:
         self.n_prefetch_from_backend = n_prefetch_from_backend
         self.n_generate_batch = n_generate_batch
         self.n_remove_example = n_remove_example
+        self.mem_size = mem_size
         self._comm = comm
         self.order_sampler = order_sampler
         self.repeat = repeat
         self.prefetch_batch_size = prefetch_batch_size
+
+        self._allocate_shared_memory()
 
         initial_order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._random_id_state = IteratorState(0, 0, False, initial_order)
@@ -267,9 +303,59 @@ class _PrefetchPipeline:
     def launched(self):
         return self._launched
 
-    def launch_thread(self):
-        self._fetch_setup(self.dataset, self.local_storage_base)
+    def measure_required(self):
+        return self.mem_size is None
 
+    def measure(self, dataset_timeout):
+        # dataset_timeout: timeout in seconds or None
+
+        status, prefetch_state, _ = self._comm.check()
+        if status == _Communicator.STATUS_RESET:
+            self.prefetch_state = prefetch_state
+
+        self.prefetch_state, indices = iterator_statemachine(
+            self.prefetch_state, self.batch_size, self.repeat,
+            self.order_sampler, len(self.dataset))
+        if indices is None:  # stop iteration
+            batch = None
+        else:
+            batch_ret = [None]
+
+            def fetch_batch():
+                batch_ret[0] = [self.dataset[idx] for idx in indices]
+
+            if dataset_timeout is None:
+                # Timeout is not set: fetch synchronously
+                fetch_batch()
+            else:
+                # Timeout is set: fetch asynchronously and watch for timeout
+                thr = threading.Thread(target=fetch_batch)
+                thr.daemon = True
+                thr.start()
+                thr.join(dataset_timeout)
+                if thr.is_alive():
+                    _raise_timeout_warning()
+                thr.join()
+
+            batch = batch_ret[0]
+            self.mem_size = max(map(_measure, batch))
+            self._allocate_shared_memory()        
+
+        return batch, self.prefetch_state
+
+    def _allocate_shared_memory(self):
+        if self.measure_required():
+            self.mem_bulk = None
+        else:
+            self.mem_bulk = \
+                sharedctypes.RawArray('b', self.batch_size * self.mem_size)
+    
+    def launch_thread(self):
+        global _prefetch_multiprocess_iterator_fetch_dataset
+        global _prefetch_multiprocess_iterator_local_storage_base
+        _prefetch_multiprocess_iterator_fetch_dataset = self.dataset
+        _prefetch_multiprocess_iterator_local_storage_base = self.local_storage_base
+        
         self._generate_random_id_thread = threading.Thread(
             target=self._generate_random_id_loop,
             name='_generate_random_id_loop'
@@ -283,8 +369,15 @@ class _PrefetchPipeline:
         )
         self._prefetch_from_backend_thread.daemon = True
         self._prefetch_from_backend_thread.start()
-
-        self._generate_batch_pool = multiprocessing.Pool(processes=self.n_generate_batch)
+        
+        self._generate_batch_pool = multiprocessing.Pool(
+            processes=self.n_generate_batch,
+            initializer=_fetch_setup,
+            initargs=(
+                self.mem_size, 
+                self.mem_bulk
+            )
+        )
         self._generate_batch_thread = threading.Thread(
             target=self._generate_batch_loop,
             name='_generate_batch_loop'
@@ -318,11 +411,7 @@ class _PrefetchPipeline:
 
         self._launched = False
 
-    def _fetch_setup(self, dataset, local_storage_base):
-        global _pfetch_multiprocess_iterator_fetch_dataset
-        global _prefetch_multiprocess_iterator_local_storage_base
-        _pfetch_multiprocess_iterator_fetch_dataset = dataset
-        _prefetch_multiprocess_iterator_local_storage_base = local_storage_base
+    
 
     def _generate_random_id_loop(self):
         indices_list = []
@@ -368,7 +457,7 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-
+        # start = time.time()
         future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
         while True:
             try:
@@ -378,7 +467,8 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-        
+        # print(f'self._prefetch_from_backend_pool.map_async e2e: {time.time() - start}', file=sys.stderr)
+
         for indices in indices_list:
             while True:
                 try:
@@ -420,6 +510,7 @@ class _PrefetchPipeline:
         if _indices is None:
             batch = None
         else:
+            print(f'thread count: {len(threading.enumerate())}')
             indices = []
             while True:
                 try:
@@ -429,16 +520,18 @@ class _PrefetchPipeline:
                         return False
                 else:
                     break
-
-            future = self._generate_batch_pool.map_async(_generate_batch, indices)
+            future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
+            print(f'batch_size: {len(indices)}', file=sys.stderr)
+            start_e2e = time.time()
             while True:
                 try:
-                    batch = future.get(1.0)
+                    data_all = future.get(1.0)
                 except multiprocessing.TimeoutError:
                     if _prefetch_multiprocess_iterator_terminating:
                         return False
                 else:
                     break
+            print(f'self._generate_batch_pool.map_async e2e: {time.time() - start_e2e}', file=sys.stderr)
 
             while True:
                 try:
@@ -448,6 +541,10 @@ class _PrefetchPipeline:
                         return False
                 else:
                     break
+            start_unpack = time.time()
+            batch = [_unpack(data, self.mem_bulk) for data in data_all]
+            print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
+            print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
@@ -482,10 +579,16 @@ class _PrefetchPipeline:
 # So _PrefetchPipeline object is "unpicklabele", and cannot be used in a multiprocessing.Process function.
 # This is because why some methods which are called by multiprocessing.Process are defined as static method.
 
+def _fetch_setup(mem_size, mem_bulk):
+    global _prefetch_multiprocess_iterator_mem_size
+    global _prefetch_multiprocess_iterator_mem_bulk
+    _prefetch_multiprocess_iterator_mem_size = mem_size
+    _prefetch_multiprocess_iterator_mem_bulk = mem_bulk
+
 def _prefetch_from_backend(indices):
     for index in indices:
-        backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root,
-                                                 _pfetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
+        backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
+                                                 _prefetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
         local_storage_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
                                                             backend_storage_file_path)
         my_pid = os.getpid()
@@ -494,24 +597,29 @@ def _prefetch_from_backend(indices):
             shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
             os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
 
-def _generate_batch(index):
-    path, int_label = _pfetch_multiprocess_iterator_fetch_dataset.pairs[index]
-    backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root, path)
+def _generate_batch(inputs):
+    i, index = inputs
+    path, int_label = _prefetch_multiprocess_iterator_fetch_dataset.pairs[index]
+    backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root, path)
     local_storage_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
                                                         backend_storage_file_path)
-    data = _pfetch_multiprocess_iterator_fetch_dataset.get_example_by_path(
+    data = _prefetch_multiprocess_iterator_fetch_dataset.get_example_by_path(
         local_storage_file_path,
         int_label
     )
+    if _prefetch_multiprocess_iterator_mem_bulk is not None:
+        offset = i * _prefetch_multiprocess_iterator_mem_size
+        limit = offset + _prefetch_multiprocess_iterator_mem_size
+        data = _pack(data, _prefetch_multiprocess_iterator_mem_bulk, offset, limit)
 
     return data
 
 
 def _remove_example(index):
     if not _prefetch_multiprocess_iterator_terminating:
-        path, _ = _pfetch_multiprocess_iterator_fetch_dataset[index]
+        path, _ = _prefetch_multiprocess_iterator_fetch_dataset[index]
 
-        backend_storage_file_path = os.path.join(_pfetch_multiprocess_iterator_fetch_dataset.root, path)
+        backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root, path)
         delete_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
                                                      backend_storage_file_path)
         if os.path.exists(delete_file_path):
@@ -519,4 +627,103 @@ def _remove_example(index):
                 os.remove(delete_file_path)
             except FileNotFoundError:
                 pass
+
+# copied from multiprocess_iterator.py
+class _PackedNdarray(object):
+
+    def __init__(self, array, mem, offset):
+        self.shape = array.shape
+        self.dtype = array.dtype
+        self.nbytes = array.nbytes
+        self.size = array.size
+        self.offset = offset
+        total = self.offset + self.nbytes
+        if total > len(mem):
+            raise ValueError(
+                'Shared memory size is too small. expect:{}, actual:{}'.format(
+                    total, len(mem)))
+        target = numpy.frombuffer(mem, self.dtype, self.size, self.offset)
+        target[...] = array.ravel()
+
+    def unpack(self, mem):
+        ret = numpy.frombuffer(mem, self.dtype, self.size, self.offset)
+        ret = ret.reshape(self.shape).copy()
+        return ret
+
+
+def _measure(data):
+    expect = 0
+    t = type(data)
+    if t is tuple or t is list or t is dict:
+        for v in data:
+            if isinstance(v, numpy.ndarray):
+                expect += v.nbytes
+    return expect
+
+
+def _pack(data, mem, offset, limit):
+    if len(mem) == 0:
+        return data
+    t = type(data)
+    over = False
+    if t is tuple or t is list:
+        ret = []
+        for v in data:
+            if isinstance(v, numpy.ndarray):
+                if v.nbytes + offset > limit:
+                    over = True
+                else:
+                    v = _PackedNdarray(v, mem, offset)
+                    offset += v.nbytes
+            ret.append(v)
+        data = t(ret)
+    elif t is dict:
+        ret = {}
+        for k, v in six.iteritems(data):
+            if isinstance(v, numpy.ndarray):
+                if v.nbytes + offset > limit:
+                    over = True
+                else:
+                    v = _PackedNdarray(v, mem, offset)
+                    offset += v.nbytes
+            ret[k] = v
+        data = ret
+    elif t is numpy.ndarray:
+        if data.nbytes + offset > limit:
+            over = True
+        else:
+            data = _PackedNdarray(data, mem, offset)
+            offset += data.nbytes
+    if over:
+        expect = _measure(data)
+        warnings.warn(
+            'Shared memory size is too small.\n' +
+            'Please set shared_mem option for MultiprocessIterator.\n' +
+            'Expect shared memory size: {} bytes.\n'.format(expect) +
+            'Actual shared memory size: {} bytes.'.format(limit - offset),
+            UserWarning)
+    return data
+
+
+def _unpack(data, mem):
+    if len(mem) == 0:
+        return data
+    t = type(data)
+    if t is tuple or t is list:
+        ret = []
+        for v in data:
+            if isinstance(v, _PackedNdarray):
+                v = v.unpack(mem)
+            ret.append(v)
+        data = t(ret)
+    elif t is dict:
+        ret = {}
+        for k, v in six.iteritems(data):
+            if isinstance(v, _PackedNdarray):
+                v = v.unpack(mem)
+            ret[k] = v
+        data = ret
+    elif t is _PackedNdarray:
+        data = data.unpack(mem)
+    return data
 

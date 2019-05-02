@@ -37,8 +37,8 @@ iterator = PrefetchMultiprocessIterator(
 
 s = time.time()
 for i in range(args.count):
-    sys.stderr.write(f'{i}/{args.count}\r')
-    sys.stderr.flush()
+    # sys.stderr.write(f'{i}/{args.count}\r')
+    # sys.stderr.flush()
     iterator.__next__()
 elapsed_time = time.time() - s
 sys.stderr.write('\n')
