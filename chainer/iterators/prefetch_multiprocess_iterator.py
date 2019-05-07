@@ -289,7 +289,6 @@ class _PrefetchPipeline:
 
         self._allocate_shared_memory()
 
-
         global _prefetch_multiprocess_iterator_waiting_id_queue
         global _prefetch_multiprocess_iterator_cached_id_queue
         global _prefetch_multiprocess_iterator_used_id_queue
@@ -374,6 +373,7 @@ class _PrefetchPipeline:
         self._prefetch_from_backend_thread.daemon = True
         self._prefetch_from_backend_thread.start()
         
+        print(f'mem_size: {self.mem_size}')
         self._generate_batch_pool = multiprocessing.Pool(
             processes=self.n_generate_batch,
             initializer=_fetch_setup,
@@ -450,7 +450,7 @@ class _PrefetchPipeline:
         future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
         while True:
             try:
-                _ = future.get(timeout=1.0)
+                _ = future.get(timeout=_response_time)
             except multiprocessing.TimeoutError:
                 if _prefetch_multiprocess_iterator_terminating:
                     return False
@@ -509,11 +509,10 @@ class _PrefetchPipeline:
                 else:
                     break
             future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
-            print(f'batch_size: {len(indices)}', file=sys.stderr)
             start_e2e = time.time()
             while True:
                 try:
-                    data_all = future.get(1.0)
+                    data_all = future.get(_response_time)
                 except multiprocessing.TimeoutError:
                     if _prefetch_multiprocess_iterator_terminating:
                         return False

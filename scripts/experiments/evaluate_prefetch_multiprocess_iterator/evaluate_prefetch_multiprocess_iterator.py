@@ -39,7 +39,15 @@ s = time.time()
 for i in range(args.count):
     # sys.stderr.write(f'{i}/{args.count}\r')
     # sys.stderr.flush()
-    iterator.__next__()
+    data = iterator.__next__()
+    '''
+    print(
+        type(data), len(data),
+        type(data[0]), len(data[0]),
+        type(data[0][0]), len(data[0][0]), data[0][0].shape,
+        type(data[0][1]), data[0][1], data[0][1].shape
+    )
+    '''
 elapsed_time = time.time() - s
 sys.stderr.write('\n')
 print(elapsed_time)
