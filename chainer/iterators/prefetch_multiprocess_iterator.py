@@ -242,7 +242,7 @@ _prefetch_multiprocess_iterator_used_id_queue = None
 
 
 class _PrefetchPipeline:
-    _generate_random_id_thread = None
+    _generate_random_id_process = None
     _prefetch_from_backend_thread = None
     _generate_batch_thread = None
     _remove_example_thread = None
@@ -289,13 +289,13 @@ class _PrefetchPipeline:
 
         self._allocate_shared_memory()
 
-        initial_order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
-        self._random_id_state = IteratorState(0, 0, False, initial_order)
 
         global _prefetch_multiprocess_iterator_waiting_id_queue
         global _prefetch_multiprocess_iterator_cached_id_queue
         global _prefetch_multiprocess_iterator_used_id_queue
-        _prefetch_multiprocess_iterator_waiting_id_queue = queue.Queue(waiting_id_queue_max_size)
+        # _prefetch_multiprocess_iterator_waiting_id_queue = queue.Queue(waiting_id_queue_max_size)
+        _prefetch_multiprocess_iterator_waiting_id_queue = multiprocessing.Queue(waiting_id_queue_max_size)
+        _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
         _prefetch_multiprocess_iterator_cached_id_queue = queue.Queue(prefetched_id_queue_max_size)
         _prefetch_multiprocess_iterator_used_id_queue = queue.Queue(used_id_queue_max_size)
 
@@ -340,7 +340,6 @@ class _PrefetchPipeline:
             batch = batch_ret[0]
             self.mem_size = max(map(_measure, batch))
             self._allocate_shared_memory()        
-
         return batch, self.prefetch_state
 
     def _allocate_shared_memory(self):
@@ -355,12 +354,17 @@ class _PrefetchPipeline:
         global _prefetch_multiprocess_iterator_local_storage_base
         _prefetch_multiprocess_iterator_fetch_dataset = self.dataset
         _prefetch_multiprocess_iterator_local_storage_base = self.local_storage_base
-        
-        self._generate_random_id_thread = threading.Thread(
-            target=self._generate_random_id_loop,
-            name='_generate_random_id_loop'
+ 
+        self._generate_random_id_process = multiprocessing.Process(
+            target=_generate_random_id_loop,
+            args=[
+                self.prefetch_batch_size,
+                self.batch_size,
+                self.repeat,
+                self.order_sampler
+            ]
         )
-        self._generate_random_id_thread.start()
+        self._generate_random_id_process.start()
 
         self._prefetch_from_backend_pool = multiprocessing.Pool(processes=self.n_prefetch_from_backend)
         self._prefetch_from_backend_thread = threading.Thread(
@@ -400,42 +404,27 @@ class _PrefetchPipeline:
         _prefetch_multiprocess_iterator_terminating = True
         for thread in [self._remove_example_thread,
                        self._prefetch_from_backend_thread,
-                       self._generate_random_id_thread,
                        self._generate_batch_thread]:
             if thread is not None:
                 while thread.is_alive():
                     thread.join(_response_time)
+                thread = None
 
-        self._prefetch_from_backend_pool.terminate()
-        self._generate_batch_pool.terminate()
+        if self._generate_random_id_process is not None:
+            self._generate_random_id_process.terminate()        
+            self._generate_random_id_process = None
+        
+        if self._prefetch_from_backend_pool is not None:
+            self._prefetch_from_backend_pool.terminate()
+            self._prefetch_from_backend_pool = None
+        
+        if self._generate_batch_pool is not None:
+            self._generate_batch_pool.terminate()
+            self._generate_batch_pool = None
 
         self._launched = False
 
-    
 
-    def _generate_random_id_loop(self):
-        indices_list = []
-        while not _prefetch_multiprocess_iterator_terminating:
-            for _ in range(self.prefetch_batch_size):
-                self._random_id_state, indices = iterator_statemachine(
-                    self._random_id_state,
-                    self.batch_size,
-                    self.repeat,
-                    self.order_sampler,
-                    len(self.dataset)
-                )
-                indices_list.append(indices)
-
-            while True:
-                try:
-                    _prefetch_multiprocess_iterator_waiting_id_queue.put(numpy.array(indices_list),
-                                                                         timeout=_response_time)
-                    indices_list = []
-                except queue.Full:
-                    if _prefetch_multiprocess_iterator_terminating:
-                        break
-                else:
-                    break
 
     def _prefetch_from_backend_loop(self):
         alive = True
@@ -583,6 +572,36 @@ def _fetch_setup(mem_size, mem_bulk):
     global _prefetch_multiprocess_iterator_mem_bulk
     _prefetch_multiprocess_iterator_mem_size = mem_size
     _prefetch_multiprocess_iterator_mem_bulk = mem_bulk
+
+
+def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_sampler):
+    _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
+    indices_list = []
+    dataset_length = len(_prefetch_multiprocess_iterator_fetch_dataset)
+    initial_order = order_sampler(numpy.arange(dataset_length), 0)
+    random_id_state = IteratorState(0, 0, False, initial_order)
+
+    while not _prefetch_multiprocess_iterator_terminating:
+        for _ in range(prefetch_batch_size):
+            random_id_state, indices = iterator_statemachine(
+                random_id_state,
+                batch_size,
+                repeat,
+                order_sampler,
+                dataset_length
+            )
+            indices_list.append(indices)
+
+        while True:
+            try:
+                _prefetch_multiprocess_iterator_waiting_id_queue.put(numpy.array(indices_list),
+                                                                     timeout=_response_time)
+                indices_list = []
+            except queue.Full:
+                if _prefetch_multiprocess_iterator_terminating:
+                    break
+            else:
+                break
 
 def _prefetch_from_backend(indices):
     for index in indices:
