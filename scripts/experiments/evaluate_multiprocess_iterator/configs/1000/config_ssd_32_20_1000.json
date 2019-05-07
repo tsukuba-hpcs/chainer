@@ -1,0 +1,8 @@
+{
+  "train": "/work/imagenet/256x256/train.ssv",
+  "root": "/work/imagenet/256x256/train",
+  "batch_size": 32,
+  "n_processes": 20,
+  "n_prefetch": 1000,
+  "count": 1000
+}

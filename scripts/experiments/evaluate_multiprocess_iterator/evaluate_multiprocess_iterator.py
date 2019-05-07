@@ -15,6 +15,7 @@ parser.add_argument('--n_processes', type=int, required=True)
 parser.add_argument('--n_prefetch', type=int, required=True)
 
 args = parser.parse_args()
+print(vars(args))
 
 dataset = LabeledImageDataset(
     pairs=args.train,
@@ -30,8 +31,8 @@ iterator = MultiprocessIterator(
 
 s = time.time()
 for i in range(args.count):
-    # sys.stderr.write(f'{i}/{args.count}\r')
-    # sys.stderr.flush()
+    sys.stderr.write(f'{i}/{args.count}\r')
+    sys.stderr.flush()
     iterator.__next__()
 elapsed_time = time.time() - s
 sys.stderr.write('\n')

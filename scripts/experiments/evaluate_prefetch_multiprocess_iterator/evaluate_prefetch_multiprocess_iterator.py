@@ -19,6 +19,7 @@ parser.add_argument('--n_generate_batch', type=int, required=True)
 parser.add_argument('--n_remove_example', type=int, required=True)
 
 args = parser.parse_args()
+print(vars(args))
 
 dataset = ExtendedLabeledImageDataset(
     pairs=args.train,
@@ -37,8 +38,8 @@ iterator = PrefetchMultiprocessIterator(
 
 s = time.time()
 for i in range(args.count):
-    # sys.stderr.write(f'{i}/{args.count}\r')
-    # sys.stderr.flush()
+    sys.stderr.write(f'{i}/{args.count}\r')
+    sys.stderr.flush()
     data = iterator.__next__()
     '''
     print(

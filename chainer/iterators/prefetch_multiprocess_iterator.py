@@ -445,7 +445,7 @@ class _PrefetchPipeline:
                     break
                 start = time.time()
                 alive = self._prefetch_from_backend_task()
-                print(f'_prefetch_from_backend_task: {time.time() - start}', file=sys.stderr)
+                # print(f'_prefetch_from_backend_task: {time.time() - start}', file=sys.stderr)
         finally:
             self._prefetch_from_backend_pool.close()
             self._prefetch_from_backend_pool.join()
@@ -453,14 +453,13 @@ class _PrefetchPipeline:
     def _prefetch_from_backend_task(self):
         while True:
             try:
-                indices_list = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
+                indices = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
             except queue.Empty:
                 if _prefetch_multiprocess_iterator_terminating:
                     return False
             else:
                 break
-        start = time.time()
-        future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
+        future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices)
         while True:
             try:
                 _ = future.get(timeout=_response_time)
@@ -469,15 +468,13 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-        print(f'self._prefetch_from_backend_pool.map_async e2e: {time.time() - start}', file=sys.stderr)
 
-        for indices in indices_list:
-            while True:
-                try:
-                    _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time) 
-                except queue.Full:
-                    if _prefetch_multiprocess_iterator_terminating:
-                        return False
+        while True:
+            try:
+                _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time) 
+            except queue.Full:
+                if _prefetch_multiprocess_iterator_terminating:
+                    return False
                 else:
                     break
         
@@ -567,8 +564,8 @@ class _PrefetchPipeline:
         while True:
             try:
                 if _prefetch_multiprocess_iterator_used_id_queue.full():
-                    index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
-                    self._remove_example_pool.apply_async(_remove_example, args=[index])
+                    indeces = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
+                    self._remove_example_pool.map_async(_remove_example, indeces)
             except queue.Empty:
                 if _prefetch_multiprocess_iterator_terminating:
                     return False
@@ -591,7 +588,6 @@ def _fetch_setup(mem_size, mem_bulk):
 
 def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_sampler):
     _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
-    indices_list = []
     dataset_length = len(_prefetch_multiprocess_iterator_fetch_dataset)
     initial_order = order_sampler(numpy.arange(dataset_length), 0)
     random_id_state = IteratorState(0, 0, False, initial_order)
@@ -605,32 +601,29 @@ def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_samp
                 order_sampler,
                 dataset_length
             )
-            indices_list.append(indices)
 
         while True:
             try:
-                _prefetch_multiprocess_iterator_waiting_id_queue.put(numpy.array(indices_list),
+                _prefetch_multiprocess_iterator_waiting_id_queue.put(indices,
                                                                      timeout=_response_time)
-                indices_list = []
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating:
                     break
             else:
                 break
 
-def _prefetch_from_backend(indices):
-    start = time.time()
-    for index in indices:
-        backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
+def _prefetch_from_backend(index):
+    # start = time.time()
+    backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
                                                  _prefetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
-        local_storage_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
+    local_storage_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
                                                             backend_storage_file_path)
-        my_pid = os.getpid()
-        if not os.path.exists(local_storage_file_path):
-            os.makedirs(os.sep.join(local_storage_file_path.split(os.sep)[:-1]), exist_ok=True)
-            shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
-            os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
-    print(f'_prefetch_from_backend: {time.time() - start}', file=sys.stderr)
+    my_pid = os.getpid()
+    if not os.path.exists(local_storage_file_path):
+        os.makedirs(os.sep.join(local_storage_file_path.split(os.sep)[:-1]), exist_ok=True)
+        shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
+        os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
+    # print(f'_prefetch_from_backend: {time.time() - start}', file=sys.stderr)
 
 def _generate_batch(inputs):
     i, index = inputs
@@ -656,8 +649,9 @@ def _remove_example_loop():
     while not _prefetch_multiprocess_iterator_terminating:
         try:
             if _prefetch_multiprocess_iterator_used_id_queue.full():
-                index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
-                _remove_example(index)
+                indeces = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
+                for index in indeces:
+                    _remove_example(index)
             else:
                 continue
         except queue.Empty:
@@ -669,7 +663,7 @@ def _remove_example_loop():
 
 def _remove_example(index):
     if not _prefetch_multiprocess_iterator_terminating:
-        path, _ = _prefetch_multiprocess_iterator_fetch_dataset[index]
+        path, _ = _prefetch_multiprocess_iterator_fetch_dataset.pairs[index]
 
         backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root, path)
         delete_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,

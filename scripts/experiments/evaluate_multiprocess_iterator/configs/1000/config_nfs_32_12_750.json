@@ -1,0 +1,8 @@
+{
+  "train": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv",
+  "root": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train",
+  "batch_size": 32,
+  "n_processes": 12,
+  "n_prefetch": 750,
+  "count": 1000
+}
