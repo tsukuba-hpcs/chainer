@@ -246,6 +246,7 @@ class _PrefetchPipeline:
     _prefetch_from_backend_thread = None
     _generate_batch_thread = None
     _remove_example_thread = None
+    _remove_example_process = None
 
     _prefetch_from_backend_pool = None
     _generate_batch_pool = None
@@ -296,7 +297,9 @@ class _PrefetchPipeline:
         _prefetch_multiprocess_iterator_waiting_id_queue = multiprocessing.Queue(waiting_id_queue_max_size)
         _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
         _prefetch_multiprocess_iterator_cached_id_queue = queue.Queue(prefetched_id_queue_max_size)
-        _prefetch_multiprocess_iterator_used_id_queue = queue.Queue(used_id_queue_max_size)
+        # _prefetch_multiprocess_iterator_used_id_queue = queue.Queue(used_id_queue_max_size)
+        _prefetch_multiprocess_iterator_used_id_queue = multiprocessing.Queue(used_id_queue_max_size)
+        _prefetch_multiprocess_iterator_used_id_queue.cancel_join_thread()
 
     @property
     def launched(self):
@@ -373,7 +376,6 @@ class _PrefetchPipeline:
         self._prefetch_from_backend_thread.daemon = True
         self._prefetch_from_backend_thread.start()
         
-        print(f'mem_size: {self.mem_size}')
         self._generate_batch_pool = multiprocessing.Pool(
             processes=self.n_generate_batch,
             initializer=_fetch_setup,
@@ -389,6 +391,7 @@ class _PrefetchPipeline:
         self._generate_batch_thread.daemon = True
         self._generate_batch_thread.start()
 
+        '''
         self._remove_example_pool = multiprocessing.Pool(processes=self.n_remove_example)
         self._remove_example_thread = threading.Thread(
             target=self._remove_example_loop,
@@ -396,6 +399,10 @@ class _PrefetchPipeline:
         )
         self._remove_example_thread.daemon = True
         self._remove_example_thread.start()
+        '''
+
+        self._remove_example_process = multiprocessing.Process(target=_remove_example_loop)
+        self._remove_example_process.start()
 
         self._launched = True
 
@@ -422,6 +429,10 @@ class _PrefetchPipeline:
             self._generate_batch_pool.terminate()
             self._generate_batch_pool = None
 
+        if self._remove_example_process is not None:
+            self._remove_example_process.terminate()
+            self._remove_example_process = None
+
         self._launched = False
 
 
@@ -432,7 +443,9 @@ class _PrefetchPipeline:
             while alive:
                 if _prefetch_multiprocess_iterator_terminating:
                     break
+                start = time.time()
                 alive = self._prefetch_from_backend_task()
+                print(f'_prefetch_from_backend_task: {time.time() - start}', file=sys.stderr)
         finally:
             self._prefetch_from_backend_pool.close()
             self._prefetch_from_backend_pool.join()
@@ -446,7 +459,7 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-        # start = time.time()
+        start = time.time()
         future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices_list)
         while True:
             try:
@@ -456,7 +469,7 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-        # print(f'self._prefetch_from_backend_pool.map_async e2e: {time.time() - start}', file=sys.stderr)
+        print(f'self._prefetch_from_backend_pool.map_async e2e: {time.time() - start}', file=sys.stderr)
 
         for indices in indices_list:
             while True:
@@ -518,7 +531,7 @@ class _PrefetchPipeline:
                         return False
                 else:
                     break
-            print(f'self._generate_batch_pool.map_async e2e: {time.time() - start_e2e}', file=sys.stderr)
+            # print(f'self._generate_batch_pool.map_async e2e: {time.time() - start_e2e}', file=sys.stderr)
 
             while True:
                 try:
@@ -530,8 +543,8 @@ class _PrefetchPipeline:
                     break
             start_unpack = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
-            print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
-            print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
+            # print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
+            # print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
@@ -551,13 +564,16 @@ class _PrefetchPipeline:
             self._remove_example_pool.join()
 
     def _remove_example_task(self):
-        try:
-            if _prefetch_multiprocess_iterator_used_id_queue.full():
-                index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
-                self._remove_example_pool.apply_async(_remove_example, args=[index])
-        except queue.Empty:
-            if _prefetch_multiprocess_iterator_terminating:
-                return False
+        while True:
+            try:
+                if _prefetch_multiprocess_iterator_used_id_queue.full():
+                    index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
+                    self._remove_example_pool.apply_async(_remove_example, args=[index])
+            except queue.Empty:
+                if _prefetch_multiprocess_iterator_terminating:
+                    return False
+            else:
+                break
 
         return True
 
@@ -603,6 +619,7 @@ def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_samp
                 break
 
 def _prefetch_from_backend(indices):
+    start = time.time()
     for index in indices:
         backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
                                                  _prefetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
@@ -613,6 +630,7 @@ def _prefetch_from_backend(indices):
             os.makedirs(os.sep.join(local_storage_file_path.split(os.sep)[:-1]), exist_ok=True)
             shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
             os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
+    print(f'_prefetch_from_backend: {time.time() - start}', file=sys.stderr)
 
 def _generate_batch(inputs):
     i, index = inputs
@@ -630,6 +648,23 @@ def _generate_batch(inputs):
         data = _pack(data, _prefetch_multiprocess_iterator_mem_bulk, offset, limit)
 
     return data
+
+
+def _remove_example_loop():
+    _prefetch_multiprocess_iterator_used_id_queue.cancel_join_thread()
+
+    while not _prefetch_multiprocess_iterator_terminating:
+        try:
+            if _prefetch_multiprocess_iterator_used_id_queue.full():
+                index = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
+                _remove_example(index)
+            else:
+                continue
+        except queue.Empty:
+            if _prefetch_multiprocess_iterator_terminating:
+                return False
+
+    return True    
 
 
 def _remove_example(index):

@@ -471,7 +471,6 @@ class _PrefetchLoop(object):
         if indices is None:  # stop iteration
             batch = None
         else:
-            print(f'batch_size: {len(indices)}', file=sys.stderr)
             start_e2e = time.time()
             future = self._pool.map_async(_fetch_run, enumerate(indices))
             while True:
@@ -482,11 +481,11 @@ class _PrefetchLoop(object):
                         return False
                 else:
                     break
-            print(f'self._pool.map_async: {time.time() - start_e2e}', file=sys.stderr)
+            # print(f'self._pool.map_async: {time.time() - start_e2e}', file=sys.stderr)
             start_unpack = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
-            print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
-            print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
+            # print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
+            # print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
             sys.stderr.flush()
 
         self._comm.put(batch, self.prefetch_state, reset_count)
