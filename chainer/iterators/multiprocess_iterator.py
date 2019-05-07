@@ -471,7 +471,6 @@ class _PrefetchLoop(object):
         if indices is None:  # stop iteration
             batch = None
         else:
-            print(f'thread count: {len(threading.enumerate())}')
             print(f'batch_size: {len(indices)}', file=sys.stderr)
             start_e2e = time.time()
             future = self._pool.map_async(_fetch_run, enumerate(indices))

@@ -510,7 +510,6 @@ class _PrefetchPipeline:
         if _indices is None:
             batch = None
         else:
-            print(f'thread count: {len(threading.enumerate())}')
             indices = []
             while True:
                 try:
