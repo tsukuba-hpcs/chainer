@@ -12,5 +12,6 @@
   "prefetchjob": 1,
   "n_prefetch": 500,
   "batchsize": 32,
-  "val_batchsize": 32
+  "val_batchsize": 32,
+  "out": "resulsts/prefetch_multiprocess_iterator/32_500_4_1"
 }

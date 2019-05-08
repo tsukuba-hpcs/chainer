@@ -29,15 +29,16 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     _finalized = False
     _comm = None
     _previous_epoch_detail = -1
+    _prefetch_pipeline = None
 
     def __init__(self, 
-                 dataset: ExtendedLabeledImageDataset,
+                 dataset,
                  batch_size, 
                  local_storage_base,
                  n_prefetch,
                  n_prefetch_from_backend, 
                  n_generate_batch,
-                 n_remove_example, 
+                 n_remove_example=1, 
                  repeat=True, 
                  shuffle=None, 
                  shared_mem=None,
@@ -46,8 +47,6 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
                  prefetched_id_queue_max_size=1000,
                  used_id_queue_max_size=1000
                  ):
-        if type(dataset) is not ExtendedLabeledImageDataset:
-            raise AssertionError('This iterator only supports `ExtendedLabeledImageDataset`')
 
         self.dataset = dataset  # support only ExtendedLabeledImageDataset
         self.batch_size = batch_size
@@ -109,7 +108,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         if self._comm is not None:
             self._comm.terminate()
 
-        if self._prefetch_pipeline.launched:
+        if self._prefetch_pipeline is not None and self._prefetch_pipeline.launched:
             self._prefetch_pipeline.terminate()
 
         self._comm = None
@@ -269,8 +268,6 @@ class _PrefetchPipeline:
                  waiting_id_queue_max_size,
                  prefetched_id_queue_max_size,
                  used_id_queue_max_size):
-        if type(dataset) is not ExtendedLabeledImageDataset:
-            raise AssertionError('This iterator only supports `ExtendedLabeledImageDataset`')
 
         self.dataset = dataset
         # cannot pickle the thread.lock object included in dataset object
@@ -435,8 +432,6 @@ class _PrefetchPipeline:
 
         self._launched = False
 
-
-
     def _prefetch_from_backend_loop(self):
         alive = True
         try:
@@ -451,6 +446,7 @@ class _PrefetchPipeline:
             self._prefetch_from_backend_pool.join()
 
     def _prefetch_from_backend_task(self):
+        # start = time.time()
         while True:
             try:
                 indices = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
@@ -459,6 +455,8 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
+        # print(f'map_async: {indices}', file=sys.stderr)
+        # sys.stderr.flush()
         future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend, indices)
         while True:
             try:
@@ -471,12 +469,17 @@ class _PrefetchPipeline:
 
         while True:
             try:
+                # print(f'put: {indices}', file=sys.stderr)
+                # sys.stderr.flush()
                 _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time) 
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating:
                     return False
-                else:
-                    break
+            else:
+                break
+        
+        # print(f'_prefetch_from_backend_task: {time.time() - start}', file=sys.stderr)
+        # sys.stderr.flush()
         
         return True
 
@@ -513,6 +516,8 @@ class _PrefetchPipeline:
             while True:
                 try:
                     indices = _prefetch_multiprocess_iterator_cached_id_queue.get(timeout=_response_time)
+                    # print(f'get: {indices}', file=sys.stderr)
+                    # sys.stderr.flush()
                 except queue.Empty:
                     if _prefetch_multiprocess_iterator_terminating:
                         return False
@@ -530,20 +535,27 @@ class _PrefetchPipeline:
                     break
             # print(f'self._generate_batch_pool.map_async e2e: {time.time() - start_e2e}', file=sys.stderr)
 
-            while True:
-                try:
-                    _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
-                except queue.Full:
-                    if _prefetch_multiprocess_iterator_terminating:
-                        return False
-                else:
-                    break
             start_unpack = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
             # print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
             # print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
 
+
         self._comm.put(batch, self.prefetch_state, reset_count)
+        
+        if batch is not None:
+            while True:
+                try:
+                    _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
+                    # print(f'put: {indices}', file=sys.stderr)
+                    # sys.stderr.flush()
+                except queue.Full:
+                    if _prefetch_multiprocess_iterator_terminating:
+                        return False
+                else:
+                    break
+        
+
         return True
 
     def _remove_example_loop(self):
@@ -601,7 +613,8 @@ def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_samp
                 order_sampler,
                 dataset_length
             )
-
+            # print(f'{indices}', file=sys.stderr)
+            # sys.stderr.flush()
         while True:
             try:
                 _prefetch_multiprocess_iterator_waiting_id_queue.put(indices,
@@ -671,6 +684,8 @@ def _remove_example(index):
         if os.path.exists(delete_file_path):
             try:
                 os.remove(delete_file_path)
+                # print(f'delete: {delete_file_path}', file=sys.stderr)
+                # sys.stderr.flush()
             except FileNotFoundError:
                 pass
 

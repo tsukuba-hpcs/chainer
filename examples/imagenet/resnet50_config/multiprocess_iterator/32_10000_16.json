@@ -10,5 +10,6 @@
   "loaderjob": 16,
   "n_prefetch": 10000,
   "batchsize": 32,
-  "val_batchsize": 32
+  "val_batchsize": 32,
+  "out": "resulsts/multiprocess_iterator/32_10000_16"
 }
