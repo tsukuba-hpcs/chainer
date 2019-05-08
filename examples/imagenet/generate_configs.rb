@@ -1,6 +1,6 @@
 require 'json'
 
-CONFIG_BASE = 'resnet50_config'
+CONFIG_BASE = 'resnet50_config/multiprocess_iterator'
 
 ITERATORS = ['multiprocess']
 LOADERJOBS = [1,2,4,8,16]
@@ -27,7 +27,7 @@ ITERATORS.each do |iterator|
         config['n_prefetch'] = n_prefetch
         config['batchsize'] = batch
         config['val_batchsize'] = batch
-        file_name = "#{iterator}_#{loaderjob}_#{n_prefetch}_#{batch}.json"
+        file_name = "#{batch}_#{n_prefetch}_#{loaderjob}.json"
         File.write("#{CONFIG_BASE}/#{file_name}", JSON.pretty_generate(config))
       end
     end

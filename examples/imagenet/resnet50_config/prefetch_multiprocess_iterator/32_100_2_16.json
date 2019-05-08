@@ -1,0 +1,15 @@
+{
+  "_train": "/work/imagenet/256x256_all/train.ssv",
+  "_val": "/work/imagenet/256x256_all/val.ssv",
+  "root": "/work/imagenet/256x256_all",
+  "mean": "/work/imagenet/256x256_all/mean.npy",
+  "gpu": 0,
+  "arch": "resnet50",
+  "epoch": 1,
+  "iterator": "prefetch_multiprocess",
+  "loaderjob": 2,
+  "prefetchjob": 16,
+  "n_prefetch": 100,
+  "batchsize": 32,
+  "val_batchsize": 32
+}
