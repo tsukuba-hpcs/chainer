@@ -10,10 +10,11 @@ BATCH = [32, 64]
 MAX_PROCESS = 24
 
 BASE = {
-  '_train' => '/work/imagenet/256x256_all/train.ssv',
-  '_val' => '/work/imagenet/256x256_all/val.ssv',
-  'root' => '/work/imagenet/256x256_all',
-  'mean' => '/work/imagenet/256x256_all/mean.npy',
+  '_train' => '/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv',
+  '_val' => '/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/val.ssv',
+  'root' => '/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train',
+  'mean' => '/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/mean_imagenet_all.npy',
+  'local_storage_base' => '/work/imagenet/local_storage_base',
   'gpu' => 0,
   'arch' => 'resnet50',
   'epoch' => 1
