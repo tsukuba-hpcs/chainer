@@ -2,6 +2,7 @@ import argparse
 import time
 import sys
 import chainer
+import numpy as np
 
 from chainer.datasets.image_dataset import LabeledImageDataset
 from chainer.datasets.image_dataset import ExtendedLabeledImageDataset
@@ -40,24 +41,25 @@ s = time.time()
 elapsed_times = []
 for i in range(args.count):
     s_iteration = time.time()
-    sys.stderr.write(f'{i}/{args.count}\r')
-    sys.stderr.flush()
+    # sys.stderr.write(f'{i}/{args.count}\r')
+    # sys.stderr.flush()
     data = iterator.__next__()
     iteration_elapsed_time = time.time() - s_iteration
     elapsed_times.append(iteration_elapsed_time)
-    '''
     print(
-        type(data), len(data),
-        type(data[0]), len(data[0]),
-        type(data[0][0]), len(data[0][0]), data[0][0].shape,
-        type(data[0][1]), data[0][1], data[0][1].shape,
+        f'label: {data[0][1]}',
         file=sys.stderr
     )
-    '''
 elapsed_time = time.time() - s
 sys.stderr.write('\n')
+elapsed_times = np.array(elapsed_times)
+print(
+    f'min: {elapsed_times.min()},',
+    f'max: {elapsed_times.max()},',
+    f'mean: {elapsed_times.mean()},',
+    f'median: {np.median(elapsed_times)},',
+    f'var: {elapsed_times.var()}'
+)
 print(elapsed_time)
-print(f'min_elapsed_time: {min(elapsed_times)}')
-print(f'max_elapsed_time: {max(elapsed_times)}')
 iterator.finalize()
 
