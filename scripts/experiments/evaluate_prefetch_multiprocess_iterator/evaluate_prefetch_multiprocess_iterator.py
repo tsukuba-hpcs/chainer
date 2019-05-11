@@ -20,7 +20,7 @@ parser.add_argument('--n_generate_batch', type=int, required=True)
 parser.add_argument('--n_remove_example', type=int, required=True)
 
 args = parser.parse_args()
-print(vars(args))
+# print(vars(args))
 
 dataset = ExtendedLabeledImageDataset(
     pairs=args.train,
@@ -51,7 +51,8 @@ for i in range(args.count):
         file=sys.stderr
     )
 elapsed_time = time.time() - s
-sys.stderr.write('\n')
+# sys.stderr.write('\n')
+'''
 elapsed_times = np.array(elapsed_times)
 print(
     f'min: {elapsed_times.min()},',
@@ -60,6 +61,8 @@ print(
     f'median: {np.median(elapsed_times)},',
     f'var: {elapsed_times.var()}'
 )
-print(elapsed_time)
+'''
+print(elapsed_time, file=sys.stdout)
+sys.stdout.flush()
 iterator.finalize()
 
