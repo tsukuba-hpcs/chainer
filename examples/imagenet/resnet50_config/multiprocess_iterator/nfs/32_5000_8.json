@@ -1,0 +1,15 @@
+{
+  "_train": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv",
+  "_val": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/val.ssv",
+  "root": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train",
+  "mean": "/home/serizawa/python36_test/scripts/ImagenetConverterForChainer/mean_imagenet_all.npy",
+  "gpu": 0,
+  "arch": "resnet50",
+  "epoch": 1,
+  "iterator": "multiprocess",
+  "loaderjob": 8,
+  "n_prefetch": 5000,
+  "batchsize": 32,
+  "val_batchsize": 32,
+  "out": "/home/serizawa/python36_test/prefetch_iterator/chainer/examples/imagenet/resnet50_results/multiprocess_iterator/nfs/32_5000_8"
+}

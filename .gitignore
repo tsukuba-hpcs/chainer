@@ -252,3 +252,4 @@ dmypy.json
 
 *.log
 /examples/imagenet/resulsts/
+/examples/imagenet/resnet50_results

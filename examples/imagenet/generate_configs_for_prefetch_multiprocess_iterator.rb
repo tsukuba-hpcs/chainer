@@ -35,7 +35,7 @@ ITERATORS.each do |iterator|
           config['n_prefetch'] = n_prefetch
           config['batchsize'] = batch
           config['val_batchsize'] = batch
-          config['out'] = "resulsts/prefetch_multiprocess_iterator/#{batch}_#{n_prefetch}_#{loaderjob}_#{prefetchjob}"
+          config['out'] = "/home/serizawa/python36_test/prefetch_iterator/chainer/examples/imagenet/resnet50_results/prefetch_multiprocess_iterator/#{batch}_#{n_prefetch}_#{loaderjob}_#{prefetchjob}"
           file_name = "#{batch}_#{n_prefetch}_#{loaderjob}_#{prefetchjob}.json"
           File.write("#{CONFIG_BASE}/#{file_name}", JSON.pretty_generate(config))
         end

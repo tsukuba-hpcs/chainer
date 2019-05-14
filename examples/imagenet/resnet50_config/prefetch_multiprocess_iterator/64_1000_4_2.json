@@ -13,5 +13,5 @@
   "n_prefetch": 1000,
   "batchsize": 64,
   "val_batchsize": 64,
-  "out": "resulsts/prefetch_multiprocess_iterator/64_1000_4_2"
+  "out": "/home/serizawa/python36_test/prefetch_iterator/chainer/examples/imagenet/resnet50_results/prefetch_multiprocess_iterator/64_1000_4_2"
 }

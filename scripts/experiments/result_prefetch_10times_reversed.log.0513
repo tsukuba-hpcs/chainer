@@ -1,0 +1,60 @@
+--train /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv --root /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train --local_storage_base /work/imagenet/local_storage_base --batch_size 32 --n_prefetch 1000 --n_prefetch_from_backend 8 --n_generate_batch 16 --n_remove_example 1 --count 1000
+188.76371240615845
+127.36494898796082
+133.54908561706543
+157.28374671936035
+152.09696555137634
+148.30629658699036
+143.3229968547821
+131.25248408317566
+104.30301308631897
+123.18404078483582
+
+--train /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv --root /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train --local_storage_base /work/imagenet/local_storage_base --batch_size 32 --n_prefetch 1000 --n_prefetch_from_backend 8 --n_generate_batch 12 --n_remove_example 1 --count 1000
+131.61329054832458
+127.0721390247345
+124.38552284240723
+122.44471621513367
+130.02385425567627
+87.97913908958435
+83.97159433364868
+105.10549545288086
+106.6790976524353
+107.98636317253113
+
+--train /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv --root /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train --local_storage_base /work/imagenet/local_storage_base --batch_size 32 --n_prefetch 1000 --n_prefetch_from_backend 8 --n_generate_batch 8 --n_remove_example 1 --count 1000
+106.19284176826477
+104.56500601768494
+116.46372032165527
+77.98962020874023
+78.53840065002441
+79.79597353935242
+102.10113215446472
+101.15560603141785
+98.68379640579224
+100.3013014793396
+
+--train /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv --root /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train --local_storage_base /work/imagenet/local_storage_base --batch_size 32 --n_prefetch 1000 --n_prefetch_from_backend 8 --n_generate_batch 4 --n_remove_example 1 --count 1000
+98.60565161705017
+113.25315475463867
+72.92635536193848
+74.45840716362
+72.4476387500763
+97.40492916107178
+94.92782402038574
+93.82560729980469
+97.6494722366333
+94.56457710266113
+
+--train /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train.ssv --root /home/serizawa/python36_test/scripts/ImagenetConverterForChainer/train --local_storage_base /work/imagenet/local_storage_base --batch_size 32 --n_prefetch 1000 --n_prefetch_from_backend 8 --n_generate_batch 2 --n_remove_example 1 --count 1000
+99.19662618637085
+84.71259140968323
+71.07530927658081
+70.15098071098328
+84.61490321159363
+86.4878466129303
+86.0250186920166
+86.86172294616699
+86.33350563049316
+87.52729415893555
+

@@ -1,0 +1,15 @@
+{
+  "_train": "/work/imagenet/256x256_all/train.ssv",
+  "_val": "/work/imagenet/256x256_all/val.ssv",
+  "root": "/work/imagenet/256x256_all",
+  "mean": "/work/imagenet/256x256_all/mean.npy",
+  "gpu": 0,
+  "arch": "resnet50",
+  "epoch": 1,
+  "iterator": "multiprocess",
+  "loaderjob": 2,
+  "n_prefetch": 100,
+  "batchsize": 64,
+  "val_batchsize": 64,
+  "out": "/home/serizawa/python36_test/prefetch_iterator/chainer/examples/imagenet/resnet50_results/multiprocess_iterator/ssd/64_100_2"
+}
