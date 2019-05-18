@@ -264,7 +264,7 @@ def main():
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), args.out)
 
     val_interval = 1, 'epoch'
-    log_interval = 1, 'iteration'
+    log_interval = 1000, 'iteration'
 
     trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
                                         device=device), trigger=val_interval)

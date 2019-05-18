@@ -8,5 +8,6 @@ ROOT="/home/serizawa/python36_test/prefetch_iterator/chainer/examples/imagenet"
 CONFIG_BASE="${ROOT}/resnet50_config"
 TRAIN_SCRIPT="${ROOT}/train_imagenet_extended.py"
 
-python ${TRAIN_SCRIPT} `config2args "${CONFIG_BASE}/multiprocess_iterator/nfs/32_1000_16.json"`
+/ppxsvc/bin/ppx-drop-caches
+python ${TRAIN_SCRIPT} `config2args "${CONFIG_BASE}/multiprocess_iterator/ssd/32_1000_16.json"`
 
