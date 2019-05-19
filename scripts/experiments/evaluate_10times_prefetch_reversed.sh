@@ -2,7 +2,7 @@
 
 config_base="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/evaluate_prefetch_multiprocess_iterator/configs/1000"
 # log="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/result_prefetch_10times_reversed.log"
-log="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/result_prefetch_10times_reversed_volta32-1.log"
+log="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/result_prefetch_10times_reversed.log"
 
 CONFIGS=(\
 "${config_base}/config_32_1000_8_16_1_1000.json" \

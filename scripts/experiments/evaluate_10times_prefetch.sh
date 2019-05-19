@@ -11,6 +11,7 @@ CONFIGS=("${config_base}/config_32_1000_8_2_1_1000.json" \
 )
 
 # CONFIGS=("${config_base}/config_32_1000_8_2_1_1000.json")
+source /home/serizawa/python36_test/prefetch_iterator/chainer/venv/bin/activate
 
 for config in ${CONFIGS[@]}
 do

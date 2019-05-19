@@ -46,10 +46,12 @@ for i in range(args.count):
     data = iterator.__next__()
     iteration_elapsed_time = time.time() - s_iteration
     elapsed_times.append(iteration_elapsed_time)
+    '''
     print(
         f'label: {data[0][1]}',
         file=sys.stderr
     )
+    '''
 elapsed_time = time.time() - s
 # sys.stderr.write('\n')
 '''

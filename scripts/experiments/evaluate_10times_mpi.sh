@@ -1,7 +1,7 @@
 #!/bin/bash
 
 config_base="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/evaluate_multiprocess_iterator/configs/1000"
-log="./result_mpi_10times.log"
+log="/home/serizawa/python36_test/prefetch_iterator/chainer/scripts/experiments/result_mpi_10times.log"
 
 CONFIGS=(\
 "${config_base}/config_nfs_32_2_1000.json" \
@@ -17,6 +17,7 @@ CONFIGS=(\
 )
 
 # CONFIGS=("${config_base}/config_32_1000_8_2_1_1000.json")
+source /home/serizawa/python36_test/prefetch_iterator/chainer/venv/bin/activate
 
 for config in ${CONFIGS[@]}
 do
