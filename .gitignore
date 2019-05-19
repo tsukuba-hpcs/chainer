@@ -251,5 +251,8 @@ dmypy.json
 .pyre/
 
 *.log
+*.log.*
 /examples/imagenet/resulsts/
 /examples/imagenet/resnet50_results
+*.out
+*.out.*
