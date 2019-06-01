@@ -225,13 +225,12 @@ def main():
               n_prefetch_from_backend=args.prefetchjob,
               n_generate_batch=args.loaderjob,
           )
-          val_iter = chainer.iterators.PrefetchMultiprocessIterator(
+          val_iter = chainer.iterators.MultiprocessIterator(
               dataset=val, 
-              batch_size=args.batchsize, 
-              local_storage_base=args.local_storage_base,
+              batch_size=args.val_batchsize, 
+              repeat=False,
               n_prefetch=args.n_prefetch,
-              n_prefetch_from_backend=args.prefetchjob,
-              n_generate_batch=args.loaderjob,
+              n_processes=1
           )
         else:
           base_dataset = chainer.datasets.LabeledImageDataset(args.train, args.root)
