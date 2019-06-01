@@ -418,7 +418,8 @@ class _PrefetchPipeline:
             args=[
                 _prefetch_multiprocess_iterator_terminating,
                 _prefetch_multiprocess_iterator_used_id_queue,
-                _prefetch_multiprocess_iterator_fetch_dataset    
+                _prefetch_multiprocess_iterator_fetch_dataset,
+                _prefetch_multiprocess_iterator_local_storage_base
             ],
             daemon=True
         )
@@ -716,7 +717,8 @@ def _generate_batch(inputs):
 def _remove_example_loop(
         _prefetch_multiprocess_iterator_terminating,
         _prefetch_multiprocess_iterator_used_id_queue,
-        _prefetch_multiprocess_iterator_fetch_dataset
+        _prefetch_multiprocess_iterator_fetch_dataset,
+        _prefetch_multiprocess_iterator_local_storage_base
     ):
     _prefetch_multiprocess_iterator_used_id_queue.cancel_join_thread()
 
@@ -728,6 +730,7 @@ def _remove_example_loop(
                     _remove_example(
                         _prefetch_multiprocess_iterator_terminating,
                         _prefetch_multiprocess_iterator_fetch_dataset,
+                        _prefetch_multiprocess_iterator_local_storage_base,
                         index
                     )
             else:
@@ -739,6 +742,7 @@ def _remove_example_loop(
 def _remove_example(
         _prefetch_multiprocess_iterator_terminating,
         _prefetch_multiprocess_iterator_fetch_dataset,
+        _prefetch_multiprocess_iterator_local_storage_base,
         index
     ):
     if not _prefetch_multiprocess_iterator_terminating.is_set():
