@@ -119,11 +119,7 @@ def scatter_dataset(dataset, comm, root=0, shuffle=False,
     if comm.rank == 0:
         data = (dataset, order)
 
-    print('start:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)', file=sys.stderr)
-    sys.stderr.flush()
     data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
-    print('finish:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)', file=sys.stderr)
-    sys.stderr.flush()
     assert data is not None
     (dataset, order) = data
 
