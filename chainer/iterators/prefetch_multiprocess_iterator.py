@@ -366,6 +366,9 @@ class _PrefetchPipeline:
         self._generate_random_id_process = multiprocessing.Process(
             target=_generate_random_id_loop,
             args=[
+                _prefetch_multiprocess_iterator_terminating,
+                _prefetch_multiprocess_iterator_waiting_id_queue,
+                _prefetch_multiprocess_iterator_fetch_dataset,
                 self.prefetch_batch_size,
                 self.batch_size,
                 self.repeat,
@@ -383,7 +386,9 @@ class _PrefetchPipeline:
             initializer=_fetch_setup,
             initargs=(
                 self.mem_size, 
-                self.mem_bulk
+                self.mem_bulk,
+                _prefetch_multiprocess_iterator_fetch_dataset,
+                _prefetch_multiprocess_iterator_local_storage_base
             )
         )
         self._generate_batch_thread = threading.Thread(
@@ -395,6 +400,11 @@ class _PrefetchPipeline:
 
         self._remove_example_process = multiprocessing.Process(
             target=_remove_example_loop,
+            args=[
+                _prefetch_multiprocess_iterator_terminating,
+                _prefetch_multiprocess_iterator_used_id_queue,
+                _prefetch_multiprocess_iterator_fetch_dataset    
+            ],
             daemon=True
         )
         self._remove_example_process.start()
@@ -455,7 +465,16 @@ class _PrefetchPipeline:
 
     def _prefetch_from_backend_loop(self):
         for _ in range(self.n_prefetch_from_backend):
-            process = multiprocessing.Process(target=_prefetch_from_backend)
+            process = multiprocessing.Process(
+                target=_prefetch_from_backend,
+                args=[
+                    _prefetch_multiprocess_iterator_terminating,
+                    _prefetch_multiprocess_iterator_waiting_id_queue,
+                    _prefetch_multiprocess_iterator_cached_id_queue,
+                    _prefetch_multiprocess_iterator_fetch_dataset,
+                    _prefetch_multiprocess_iterator_local_storage_base
+                ]
+            )
             process.start()
             self._prefetch_from_backend_pool.append(process)
 
@@ -558,13 +577,25 @@ class _PrefetchPipeline:
 # So _PrefetchPipeline object is "unpicklabele", and cannot be used in a multiprocessing.Process function.
 # This is because why some methods which are called by multiprocessing.Process are defined as static method.
 
-def _fetch_setup(mem_size, mem_bulk):
+def _fetch_setup(mem_size, mem_bulk, dataset, local_storage_base):
     global _prefetch_multiprocess_iterator_mem_size
     global _prefetch_multiprocess_iterator_mem_bulk
+    global _prefetch_multiprocess_iterator_fetch_dataset
+    global _prefetch_multiprocess_iterator_local_storage_base
     _prefetch_multiprocess_iterator_mem_size = mem_size
     _prefetch_multiprocess_iterator_mem_bulk = mem_bulk
+    _prefetch_multiprocess_iterator_fetch_dataset = dataset
+    _prefetch_multiprocess_iterator_local_storage_base = local_storage_base
 
-def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_sampler):
+def _generate_random_id_loop (
+        _prefetch_multiprocess_iterator_terminating,
+        _prefetch_multiprocess_iterator_waiting_id_queue, 
+        _prefetch_multiprocess_iterator_fetch_dataset,  
+        prefetch_batch_size, 
+        batch_size, 
+        repeat, 
+        order_sampler
+    ):
     _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
     dataset_length = len(_prefetch_multiprocess_iterator_fetch_dataset)
     initial_order = order_sampler(numpy.arange(dataset_length), 0)
@@ -588,7 +619,13 @@ def _generate_random_id_loop(prefetch_batch_size, batch_size, repeat, order_samp
             else:
                 break
 
-def _prefetch_from_backend():
+def _prefetch_from_backend(
+        _prefetch_multiprocess_iterator_terminating,
+        _prefetch_multiprocess_iterator_waiting_id_queue,
+        _prefetch_multiprocess_iterator_cached_id_queue,
+        _prefetch_multiprocess_iterator_fetch_dataset,
+        _prefetch_multiprocess_iterator_local_storage_base
+    ):
     _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
     _prefetch_multiprocess_iterator_cached_id_queue.cancel_join_thread()
  
@@ -659,7 +696,11 @@ def _generate_batch(inputs):
     return data
 
 
-def _remove_example_loop():
+def _remove_example_loop(
+        _prefetch_multiprocess_iterator_terminating,
+        _prefetch_multiprocess_iterator_used_id_queue,
+        _prefetch_multiprocess_iterator_fetch_dataset
+    ):
     _prefetch_multiprocess_iterator_used_id_queue.cancel_join_thread()
 
     while not _prefetch_multiprocess_iterator_terminating.is_set():
@@ -667,14 +708,22 @@ def _remove_example_loop():
             if _prefetch_multiprocess_iterator_used_id_queue.full():
                 indeces = _prefetch_multiprocess_iterator_used_id_queue.get(timeout=_response_time)
                 for index in indeces:
-                    _remove_example(index)
+                    _remove_example(
+                        _prefetch_multiprocess_iterator_terminating,
+                        _prefetch_multiprocess_iterator_fetch_dataset,
+                        index
+                    )
             else:
                 continue
         except queue.Empty:
             if _prefetch_multiprocess_iterator_terminating.is_set():
                 return False
 
-def _remove_example(index):
+def _remove_example(
+        _prefetch_multiprocess_iterator_terminating,
+        _prefetch_multiprocess_iterator_fetch_dataset,
+        index
+    ):
     if not _prefetch_multiprocess_iterator_terminating.is_set():
         path, _ = _prefetch_multiprocess_iterator_fetch_dataset.pairs[index]
 
