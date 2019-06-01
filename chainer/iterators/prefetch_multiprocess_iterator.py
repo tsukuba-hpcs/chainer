@@ -45,7 +45,9 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
                  dataset_timeout=30.0,
                  waiting_id_queue_max_size=1000,
                  prefetched_id_queue_max_size=1000,
-                 used_id_queue_max_size=1000
+                 used_id_queue_max_size=1000,
+                 dataset_start=0,
+                 dataset_finish=0
                  ):
 
         self.dataset = dataset  # support only ExtendedLabeledImageDataset
@@ -60,6 +62,8 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.order_sampler = ShuffleOrderSampler()  # fixed, for now
         self.shared_mem = shared_mem
         self.dataset_timeout = dataset_timeout
+        self.dataset_start = dataset_start
+        self.dataset_finish = dataset_finish
 
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
         self.reset()
@@ -78,7 +82,9 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
             self.n_prefetch,
             waiting_id_queue_max_size,
             prefetched_id_queue_max_size,
-            used_id_queue_max_size
+            used_id_queue_max_size,
+            dataset_start,
+            dataset_finish
         )
 
     def __next__(self):
@@ -274,13 +280,16 @@ class _PrefetchPipeline:
                  prefetch_batch_size,
                  waiting_id_queue_max_size,
                  prefetched_id_queue_max_size,
-                 used_id_queue_max_size):
+                 used_id_queue_max_size,
+                 dataset_start=0,
+                 dataset_finish=0
+                 ):
 
         self.dataset = dataset
         # cannot pickle the thread.lock object included in dataset object
         self.dataset_pairs = self.dataset.pairs
         self.dataset_root = self.dataset.root
-
+        
         self.batch_size = batch_size
         self.local_storage_base = local_storage_base
         self.n_prefetch_from_backend = n_prefetch_from_backend
@@ -291,6 +300,9 @@ class _PrefetchPipeline:
         self.order_sampler = order_sampler
         self.repeat = repeat
         self.prefetch_batch_size = prefetch_batch_size
+        
+        self.dataset_start = dataset_start
+        self.dataset_finish = dataset_finish
 
         self._allocate_shared_memory()
 
@@ -306,6 +318,8 @@ class _PrefetchPipeline:
 
         global _prefetch_multiprocess_iterator_terminating
         _prefetch_multiprocess_iterator_terminating = multiprocessing.Event()
+
+        print(f'_PrefetchPipeline dataset_start: {dataset_start}, dataset_finish: {dataset_finish}', file=sys.stderr)
 
     @property
     def launched(self):
@@ -369,6 +383,7 @@ class _PrefetchPipeline:
                 _prefetch_multiprocess_iterator_terminating,
                 _prefetch_multiprocess_iterator_waiting_id_queue,
                 _prefetch_multiprocess_iterator_fetch_dataset,
+                self.dataset_start,
                 self.prefetch_batch_size,
                 self.batch_size,
                 self.repeat,
@@ -591,6 +606,7 @@ def _generate_random_id_loop (
         _prefetch_multiprocess_iterator_terminating,
         _prefetch_multiprocess_iterator_waiting_id_queue, 
         _prefetch_multiprocess_iterator_fetch_dataset,  
+        dataset_start,
         prefetch_batch_size, 
         batch_size, 
         repeat, 
@@ -612,7 +628,8 @@ def _generate_random_id_loop (
             )
         while True:
             try:
-                _prefetch_multiprocess_iterator_waiting_id_queue.put(indices, timeout=_response_time)
+                # Note: `indices` is an object of numpy.ndarray
+                _prefetch_multiprocess_iterator_waiting_id_queue.put(dataset_start + indices, timeout=_response_time)
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating.is_set():
                     return

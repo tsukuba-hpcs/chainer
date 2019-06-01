@@ -75,6 +75,28 @@ class SubDataset(dataset_mixin.DatasetMixin):
             index = self._order[index]
         return self._dataset[index]
 
+class SubDatasetExtended(SubDataset):
+    # for ExtendedLabeledImageDataset
+    @property
+    def pairs(self):
+        return self._dataset.pairs
+
+    @property
+    def root(self):
+        return self._dataset.root
+
+    # for PrefetchMultiprocessIterator
+    @property
+    def start(self):
+        return self._start
+
+    @property
+    def finish(self):
+        return self._finish
+
+    def get_example_by_path(self, full_path, int_label):
+        return self._dataset.get_example_by_path(full_path, int_label)
+
 
 def split_dataset(dataset, split_at, order=None):
     """Splits a dataset into two subsets.

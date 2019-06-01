@@ -27,6 +27,7 @@ from chainer.datasets.sub_dataset import split_dataset_n  # NOQA
 from chainer.datasets.sub_dataset import split_dataset_n_random  # NOQA
 from chainer.datasets.sub_dataset import split_dataset_random  # NOQA
 from chainer.datasets.sub_dataset import SubDataset  # NOQA
+from chainer.datasets.sub_dataset import SubDatasetExtended  #  NOQA
 from chainer.datasets.svhn import get_svhn  # NOQA
 from chainer.datasets.text_dataset import TextDataset  # NOQA
 from chainer.datasets.transform_dataset import TransformDataset  # NOQA
