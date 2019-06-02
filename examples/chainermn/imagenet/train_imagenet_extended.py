@@ -224,7 +224,7 @@ def main():
     else:
         train = None
         val = None
-    train = chainermn.scatter_dataset(train, comm, shuffle=True)
+    train = chainermn.scatter_dataset_extended(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm)
 
 
@@ -236,13 +236,8 @@ def main():
             n_prefetch=args.n_prefetch,
             n_prefetch_from_backend=args.prefetchjob,
             n_generate_batch=args.loaderjob,
-        )
-        val_iter = chainer.iterators.MultiprocessIterator(
-            dataset=val, 
-            batch_size=args.val_batchsize, 
-            repeat=False,
-            n_prefetch=args.n_prefetch,
-            n_processes=1
+            dataset_start = train.start,
+            dataset_finish = train.finish
         )
     else:
         # A workaround for processes crash should be done before making
@@ -250,8 +245,9 @@ def main():
         # along with Infiniband.
         train_iter = chainer.iterators.MultiprocessIterator(
                 train, args.batchsize, n_processes=args.loaderjob)
-        val_iter = chainer.iterators.MultiprocessIterator(
-                val, args.val_batchsize, repeat=False, n_processes=args.loaderjob)
+        
+    val_iter = chainer.iterators.MultiprocessIterator(
+        val, args.val_batchsize, repeat=False, n_processes=args.loaderjob)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = chainermn.create_multi_node_optimizer(
@@ -264,12 +260,12 @@ def main():
 
     checkpoint_interval = (10, 'iteration') if args.test else (1, 'epoch')
     val_interval = (10, 'iteration') if args.test else (1, 'epoch')
-    log_interval = (10, 'iteration') if args.test else (1000, 'iteration')
+    log_interval = (10, 'iteration') if args.test else (100, 'iteration')
 
-    checkpointer = chainermn.create_multi_node_checkpointer(
-        name='imagenet-example', comm=comm)
-    checkpointer.maybe_load(trainer, optimizer)
-    trainer.extend(checkpointer, trigger=checkpoint_interval)
+    # checkpointer = chainermn.create_multi_node_checkpointer(
+    #    name='imagenet-example', comm=comm)
+    # checkpointer.maybe_load(trainer, optimizer)
+    # trainer.extend(checkpointer, trigger=checkpoint_interval)
 
     # Create a multi node evaluator from an evaluator.
     evaluator = TestModeEvaluator(val_iter, model, device=device)
@@ -291,7 +287,7 @@ def main():
     if args.resume:
         chainer.serializers.load_npz(args.resume, trainer)
 
-    trainer.run()
+    trainer.run(show_loop_exception_msg=True)
 
 
 if __name__ == '__main__':
