@@ -663,6 +663,8 @@ def _prefetch_from_backend(
             else:
                 break
 
+        batch_size = len(indices)
+        cache_hit_count = 0
         for index in indices:
             backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
                                                      _prefetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
@@ -673,6 +675,8 @@ def _prefetch_from_backend(
                 os.makedirs(os.sep.join(local_storage_file_path.split(os.sep)[:-1]), exist_ok=True)
                 shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
                 os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
+            else:
+                cache_hit_count += 1
 
         s_queue = time.time()
         while True:
@@ -686,7 +690,7 @@ def _prefetch_from_backend(
         print(f'_prefetch_multiprocess_iterator_cached_id_queue.put: {time.time() - s_queue}', file=sys.stderr)
 
 	
-        print(f'_prefetch_from_backend: {time.time() - start}', file=sys.stderr)
+        print(f'_prefetch_from_backend: {time.time() - start}, local cache hit ratio: {cache_hit_count / batch_size}', file=sys.stderr)
         sys.stderr.flush()
 
 def _generate_batch(inputs):
