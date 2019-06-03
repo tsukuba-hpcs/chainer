@@ -268,16 +268,16 @@ def main():
     # trainer.extend(checkpointer, trigger=checkpoint_interval)
 
     # Create a multi node evaluator from an evaluator.
-    evaluator = TestModeEvaluator(val_iter, model, device=device)
-    evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
-    trainer.extend(evaluator, trigger=val_interval)
+    # evaluator = TestModeEvaluator(val_iter, model, device=device)
+    # evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
+    # trainer.extend(evaluator, trigger=val_interval)
 
     # Some display and output extensions are necessary only for one worker.
     # (Otherwise, there would just be repeated outputs.)
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
+        # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport([
             'epoch', 'iteration', 'main/loss', 'validation/main/loss',
             'main/accuracy', 'validation/main/accuracy', 'lr'
