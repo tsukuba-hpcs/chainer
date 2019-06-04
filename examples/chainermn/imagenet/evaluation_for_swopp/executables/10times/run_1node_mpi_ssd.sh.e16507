@@ -1,0 +1,54 @@
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode14
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode14
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode14
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode14
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[45733,1],2]
+  Exit code:    1
+--------------------------------------------------------------------------
+
+real	0m21.269s
+user	0m2.482s
+sys	0m5.653s
+
+============================================================
+Request ID:             16507.nqsv
+Request Name:           run_1node_mpi_ssd.sh
+Queue:                  gen_S@nqsv
+Number of Jobs:         1
+User Name:              serihiro
+Group Name:             NBB
+Created Request Time:   Tue Jun  4 17:46:50 2019
+Started Request Time:   Tue Jun  4 17:47:53 2019
+Ended Request Time:     Tue Jun  4 17:54:42 2019
+Resources Information:
+  Elapse:               409S
+  Remaining Elapse:     10391S
+============================================================

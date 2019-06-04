@@ -1,0 +1,15 @@
+[fnode09:126638] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[fnode09:126638] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+[fnode09:126672] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[fnode09:126672] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+*** An error occurred in MPI_Init_thread
+*** An error occurred in MPI_Init_thread
+*** on a NULL communicator
+*** on a NULL communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+***    and potentially your MPI job)
+[fnode09:126638] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+[fnode09:126672] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+======== Error: Application returned non-zero code 1

@@ -1,0 +1,41 @@
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode37
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode37
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode37
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode37
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+
+%NQSV(INFO): Batch job received signal SIGKILL. (Exceeded per-req elapse time limit)
+
+============================================================
+Request ID:             16474.nqsv
+Request Name:           run_1node_mpi_ssd.sh
+Queue:                  gen_S@nqsv
+Number of Jobs:         1
+User Name:              serihiro
+Group Name:             NBB
+Created Request Time:   Tue Jun  4 16:09:50 2019
+Started Request Time:   Tue Jun  4 16:10:54 2019
+Ended Request Time:     Tue Jun  4 19:10:59 2019
+Resources Information:
+  Elapse:               10805S
+  Remaining Elapse:     0S
+============================================================

@@ -1,0 +1,368 @@
+start:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+finish:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:batch = iterator.next()
+finish:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:batch = iterator.next()
+finish:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+finish:data = comm.bcast_obj(data, max_buf_len=max_buf_len, root=0)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.bcast_data(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.bcast_data(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.bcast_data(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.bcast_data(target)
+start:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+start:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+start:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+start:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+end:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+end:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+end:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+end:nccl_comm_id = mpi_comm.bcast(nccl_comm_id)
+finish:self.communicator.bcast_data(target)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.communicator.bcast_data(target)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.communicator.bcast_data(target)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:self.communicator.bcast_data(target)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:batch = iterator.next()
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+start:batch = iterator.next()
+finish:batch = iterator.next()
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+start:optimizer.update(loss_func, *in_arrays) <class 'chainermn.optimizers._MultiNodeOptimizer'>
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+<class 'chainermn.communicators.pure_nccl_communicator.PureNcclCommunicator'>
+start:self.communicator.allreduce_grad(target)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.communicator.allreduce_grad(target)
+start:self.actual_optimizer.update(None, *args, **kwds)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)
+finish:self.actual_optimizer.update(None, *args, **kwds)
+finish:optimizer.update(loss_func, *in_arrays)

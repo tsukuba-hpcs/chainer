@@ -1,0 +1,29 @@
+[gnode14:161674] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[gnode14:161673] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[gnode14:161671] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[gnode14:161708] PMIX ERROR: NOT-FOUND in file ptl_tcp.c at line 688
+[gnode14:161674] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+[gnode14:161673] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+[gnode14:161671] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+[gnode14:161708] OPAL ERROR: Unreachable in file pmix2x_client.c at line 112
+*** An error occurred in MPI_Init_thread
+*** on a NULL communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+[gnode14:161673] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+*** An error occurred in MPI_Init_thread
+*** on a NULL communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+[gnode14:161674] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+*** An error occurred in MPI_Init_thread
+*** on a NULL communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+[gnode14:161671] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+*** An error occurred in MPI_Init_thread
+*** on a NULL communicator
+*** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+***    and potentially your MPI job)
+[gnode14:161708] Local abort before MPI_INIT completed completed successfully, but am not able to aggregate error messages, and not able to guarantee that all other processes were killed!
+======== Error: Application returned non-zero code 1

@@ -1,0 +1,43 @@
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode45
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode45
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode45
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: There was an error initializing an OpenFabrics device.
+
+  Local host:   gnode45
+  Local device: mlx5_3
+--------------------------------------------------------------------------
+
+real	0m35.648s
+user	0m33.509s
+sys	0m15.933s
+
+============================================================
+Request ID:             16475.nqsv
+Request Name:           run_1node_mpi_ssd.sh
+Queue:                  gen_S@nqsv
+Number of Jobs:         1
+User Name:              serihiro
+Group Name:             NBB
+Created Request Time:   Tue Jun  4 16:24:18 2019
+Started Request Time:   Tue Jun  4 16:25:53 2019
+Ended Request Time:     Tue Jun  4 16:33:03 2019
+Resources Information:
+  Elapse:               430S
+  Remaining Elapse:     10370S
+============================================================

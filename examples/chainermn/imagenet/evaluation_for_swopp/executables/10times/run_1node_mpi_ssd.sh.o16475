@@ -1,0 +1,19 @@
+start copying the dataset
+finish copying the dataset
+==========================================
+This script is /work/NBB/serihiro/src/chainer/examples/chainermn/imagenet/evaluation_for_swopp/scripts/train_imagenet_extended_10times.py
+Num process (COMM_WORLD): 4
+Using pure_nccl communicator
+Using resnet50 arch
+Using multiprocess iterator
+Num Minibatch-size: 32
+Num epoch: 10
+Num n_prefetch: 1000
+Num prefetchjob: 2
+Num loaderjob: 2
+train: /scr/256x256_all/train.ssv
+val: /scr/256x256_all/val.ssv
+root: /scr/256x256_all/train
+mean: /scr/256x256_all/mean.npy
+out: result
+==========================================
