@@ -39,7 +39,7 @@ mkdir -p ${ROOT}/logs/multiprocess_iterator_lustre/${np}
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 1 \
+  --epoch 2 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
 

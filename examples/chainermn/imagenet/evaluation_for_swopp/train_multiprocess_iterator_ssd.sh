@@ -35,13 +35,9 @@ touch $DUMMY_FILE
 
 copy_start_time=`date +%s`
 if ! ln -s $DUMMY_FILE $LOCK_FILE; then
-    echo `hostname`": LOCKED"
-
     while [ -e $LOCK_FILE ]; do
-      echo `hostname`': waiting...'
       sleep 1
     done
-    echo `hostname`': detected the lock has been released'  
 else
     echo `hostname`': got the lock'
     echo `hostname`': start copying the dataset'
@@ -71,7 +67,6 @@ copy_end_time=`date +%s`
 time=$((copy_end_time - copy_start_time))
 echo "`hostname`: copy_elapsed_time: ${time}"
 
-
 /work/1/NBB/serihiro/venv/default/bin/python ${ROOT}/scripts/train_imagenet_extended.py \
   /scr/256x256_all/train.ssv \
   /scr/256x256_all/val.ssv \
@@ -85,7 +80,7 @@ echo "`hostname`: copy_elapsed_time: ${time}"
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 1 \
+  --epoch 2 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
   # --communicator hierarchical 2>> ${LOG_STDERR}

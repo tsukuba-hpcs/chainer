@@ -37,11 +37,11 @@ mkdir -p ${ROOT}/logs/prefetch_multiprocess_iterator/${np}
   --arch resnet50 \
   --n_prefetch 1000 \
   --iterator prefetch_multiprocess \
-  --prefetchjob 1 \
-  --loaderjob 1 \
+  --prefetchjob 12 \
+  --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 1 \
+  --epoch 2 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
 
