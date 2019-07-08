@@ -103,30 +103,23 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self._state = state
 
         if batch is None:
-            print('PrefetchMultiprocessIterator: StopIteration is called!', file=sys.stderr)
             raise StopIteration
         else:
             return batch
 
     def finalize(self):
-        print('PrefetchMultiprocessIterator: finalize is called', file=sys.stderr)
         if self._finalized:
             return
 
         if self._comm is not None:
-            print('PrefetchMultiprocessIterator: start self._comm.terminate()', file=sys.stderr)
             self._comm.terminate()
-            print('PrefetchMultiprocessIterator: finish self._comm.terminate()', file=sys.stderr)
 
         if self._prefetch_pipeline is not None and self._prefetch_pipeline.launched:
-            print('PrefetchMultiprocessIterator: start self._prefetch_pipeline.terminate()', file=sys.stderr)
             self._prefetch_pipeline.terminate()
-            print('PrefetchMultiprocessIterator: finish self._prefetch_pipeline.terminate()', file=sys.stderr)
 
         self._comm = None
         self._prefetch_pipeline = None
         self._finalized = True
-        print('PrefetchMultiprocessIterator: finalize is all done', file=sys.stderr)
 
     @property
     def current_position(self):
@@ -319,8 +312,6 @@ class _PrefetchPipeline:
         global _prefetch_multiprocess_iterator_terminating
         _prefetch_multiprocess_iterator_terminating = multiprocessing.Event()
 
-        print(f'_PrefetchPipeline dataset_start: {dataset_start}, dataset_finish: {dataset_finish}', file=sys.stderr)
-
     @property
     def launched(self):
         return self._launched
@@ -430,56 +421,39 @@ class _PrefetchPipeline:
         self._launched = True
 
     def terminate(self):
-        print('_PrefetchPipeline: terminate is called', file=sys.stderr)
         global _prefetch_multiprocess_iterator_terminating
         _prefetch_multiprocess_iterator_terminating.set()
 
         if self._generate_random_id_process is not None:
-            print('_PrefetchPipeline: start self._generate_random_id_process.kill', file=sys.stderr)
             self._generate_random_id_process.terminate()        
-            print(f'is_alive after terminate: {self._generate_random_id_process.is_alive()}', file=sys.stderr)
             self._generate_random_id_process.join()
-            print(f'is_alive after join: {self._generate_random_id_process.is_alive()}', file=sys.stderr)
-            print('_PrefetchPipeline: finish self._generate_random_id_process.kill', file=sys.stderr)
             self._generate_random_id_process = None
 
         if self._prefetch_from_backend_pool is not None:
-            print('_PrefetchPipeline: start self._prefetch_from_backend_pool.terminate()', file=sys.stderr)
             for process in self._prefetch_from_backend_pool:
-                print(f'_PrefetchPipeline: start {process} kill', file=sys.stderr)
                 process.terminate()
-                print(f'is_alive after terminate: {process.is_alive()}', file=sys.stderr)
                 process.join()
-                print(f'is_alive after join: {process.is_alive()}', file=sys.stderr)
-                print(f'_PrefetchPipeline: finish {process} kill', file=sys.stderr)
-            print('_PrefetchPipeline: finish self._prefetch_from_backend_pool.terminate()', file=sys.stderr)
             self._prefetch_from_backend_pool = None
         
-        if self._generate_batch_pool is not None:
-            print('_PrefetchPipeline: start self._generate_batch_pool.terminate()', file=sys.stderr)
-            self._generate_batch_pool.terminate()
-            print('_PrefetchPipeline: finish self._generate_batch_pool.terminate()', file=sys.stderr)
-            self._generate_batch_pool = None
 
         if self._remove_example_process is not None:
-            print('_PrefetchPipeline: start self._remove_example_process.kill', file=sys.stderr)
             self._remove_example_process.terminate()
-            print(f'is_alive after terminate: {self._remove_example_process.is_alive()}')
-            print('_PrefetchPipeline: finish self._remove_example_process.kill', file=sys.stderr)
             self._remove_example_process = None
 
         for thread in [self._generate_batch_thread]:
             if thread is not None:
                 while thread.is_alive():
-                    print(f'_PrefetchPipeline: {thread} is joining', file=sys.stderr)
                     thread.join(_response_time)
-                    print(f'_PrefetchPipeline: {thread} is joined', file=sys.stderr)
                 thread = None
-        print('_PrefetchPipeline: all threads are joined', file=sys.stderr)
+                
+        if self._generate_batch_pool is not None:
+            self._generate_batch_pool.close()
+            self._generate_batch_pool.terminate()
+            self._generate_batch_pool.join()
+        
+            self._generate_batch_pool = None
         
         self._launched = False
-        print('_PrefetchPipeline: terminate is done', file=sys.stderr)
-        sys.stderr.flush()
 
     def _prefetch_from_backend_loop(self):
         for _ in range(self.n_prefetch_from_backend):
@@ -506,9 +480,6 @@ class _PrefetchPipeline:
                     return False
             else:
                 break
-
-        # print(f'_prefetch_from_backend_task: {time.time() - start}', file=sys.stderr)
-        # sys.stderr.flush()
         
         return False
 
@@ -521,12 +492,11 @@ class _PrefetchPipeline:
                 alive = self._generate_batch_task()
         finally:
             if self._generate_batch_pool is not None:
-                print('start self._generate_batch_pool.close()', file=sys.stderr)
                 self._generate_batch_pool.close()
-                print('finish self._generate_batch_pool.close()', file=sys.stderr)
-                print('start self._generate_batch_pool.join()', file=sys.stderr)
+                self._generate_batch_pool.terminate()
                 self._generate_batch_pool.join()
-                print('finish self._generate_batch_pool.join()', file=sys.stderr)
+
+                self._generate_batch_pool = None
 
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
@@ -544,7 +514,6 @@ class _PrefetchPipeline:
         # if repeat == False and passed 1 epoch, `indices` will be None
         # see the implementation of `iterator_statemachine` for more detail
         if _indices is None:
-            print('_PrefetchPipeline: _indices is None! So None will be set as a batch', file=sys.stderr)           
             batch = None
         else:
             indices = []
@@ -557,8 +526,6 @@ class _PrefetchPipeline:
                                 return False
                 else:
                     break
-            print(f'_prefetch_multiprocess_iterator_cached_id_queue.get: {time.time() - start}', file=sys.stderr)
-            sys.stderr.flush()
 
             start = time.time()
             future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
@@ -570,8 +537,6 @@ class _PrefetchPipeline:
                         return False
                 else:
                     break
-            print(f'map_async: {time.time() - start}', file=sys.stderr)
-            sys.stderr.flush()
 
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
 
@@ -582,8 +547,6 @@ class _PrefetchPipeline:
             while True:
                 try:
                     _prefetch_multiprocess_iterator_used_id_queue.put(indices, timeout=_response_time)
-                    # print(f'put: {indices}', file=sys.stderr)
-                    # sys.stderr.flush()
                 except queue.Full:
                     if _prefetch_multiprocess_iterator_terminating.is_set():
                         return False
@@ -687,11 +650,6 @@ def _prefetch_from_backend(
                     return False
             else:
                 break
-        print(f'_prefetch_multiprocess_iterator_cached_id_queue.put: {time.time() - s_queue}', file=sys.stderr)
-
-	
-        print(f'_prefetch_from_backend: {time.time() - start}, local cache hit ratio: {cache_hit_count / batch_size}', file=sys.stderr)
-        sys.stderr.flush()
 
 def _generate_batch(inputs):
     # start = time.time()
@@ -717,9 +675,6 @@ def _generate_batch(inputs):
         limit = offset + _prefetch_multiprocess_iterator_mem_size
         data = _pack(data, _prefetch_multiprocess_iterator_mem_bulk, offset, limit)
     
-    # print(f'_generate_batch: {time.time() - start}', file=sys.stderr)
-    # sys.stderr.flush()
-
     return data
 
 
@@ -763,8 +718,6 @@ def _remove_example(
         if os.path.exists(delete_file_path):
             try:
                 os.remove(delete_file_path)
-                # print(f'delete: {delete_file_path}', file=sys.stderr)
-                # sys.stderr.flush()
             except FileNotFoundError:
                 pass
 

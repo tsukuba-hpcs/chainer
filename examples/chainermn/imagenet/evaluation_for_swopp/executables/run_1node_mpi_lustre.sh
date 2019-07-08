@@ -18,8 +18,11 @@ touch /work/NBB/serihiro/dummy
 mkdir -p /scr/local_storage_base
 cp /work/NBB/serihiro/dummy /scr/local_storage_base
 
+/usr/sbin/dropcaches 3
+
+current_datetime=`date +%Y%m%d_%H%M%S`
 time mpirun ${NQSII_MPIOPTS} \
     -x UCX_MAX_RNDV_LANES=4 \
     -np 4 -npernode 4 \
-    ${ROOT}/train_multiprocess_iterator_lustre.sh 4
+    ${ROOT}/train_multiprocess_iterator_lustre.sh 4 ${current_datetime}
 

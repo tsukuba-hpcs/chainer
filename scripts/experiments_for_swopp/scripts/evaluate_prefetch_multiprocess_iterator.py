@@ -67,7 +67,10 @@ def main():
         f'var: {elapsed_times.var()}'
     )
     '''
-    print(elapsed_time, file=sys.stdout)
+    print(elapsed_times)
+
+    print('total', elapsed_time, file=sys.stdout)
+    
     sys.stdout.flush()
     iterator.finalize()
 

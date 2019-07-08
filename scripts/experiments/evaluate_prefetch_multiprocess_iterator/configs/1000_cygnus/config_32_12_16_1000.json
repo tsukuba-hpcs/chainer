@@ -1,0 +1,11 @@
+{
+  "train": "/work/NBB/serihiro/dataset/imagenet/256x256_all/train.ssv",
+  "root": "/work/NBB/serihiro/dataset/imagenet/256x256_all/train",
+  "local_storage_base": "/scr/local_storage_base",
+  "batch_size": 32,
+  "n_prefetch": 1000,
+  "n_prefetch_from_backend": 12,
+  "n_generate_batch": 16,
+  "n_remove_example": 1,
+  "count": 1000
+}

@@ -1,0 +1,8 @@
+{
+  "train": "/scr/256x256_all/train.ssv",
+  "root": "/scr/256x256_all/train",
+  "batch_size": 32,
+  "n_processes": 16,
+  "n_prefetch": 50,
+  "count": 1000
+}

@@ -263,10 +263,10 @@ def main():
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), args.out)
 
     val_interval = 1, 'epoch'
-    log_interval = 1000, 'iteration'
+    log_interval = 1, 'epoch'
 
-    trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
-                                        device=device), trigger=val_interval)
+    # trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
+    #                                    device=device), trigger=val_interval)
     # TODO(sonots): Temporarily disabled for chainerx. Fix it.
     if device.xp is not chainerx:
         trainer.extend(extensions.DumpGraph('main/loss'))
@@ -276,12 +276,12 @@ def main():
     # Be careful to pass the interval directly to LogReport
     # (it determines when to emit log rather than when to read observations)
     trainer.extend(extensions.LogReport(trigger=log_interval))
-    trainer.extend(extensions.observe_lr(), trigger=log_interval)
+    # trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport([
         'epoch', 'iteration', 'main/loss', 'validation/main/loss',
         'main/accuracy', 'validation/main/accuracy', 'lr'
-    ]), trigger=(10, 'iteration'))
-    trainer.extend(extensions.ProgressBar(update_interval=10))
+    ]), trigger=(1000, 'iteration'))
+    trainer.extend(extensions.ProgressBar(update_interval=1000))
 
     if args.resume:
         chainer.serializers.load_npz(args.resume, trainer)

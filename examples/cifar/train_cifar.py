@@ -12,8 +12,9 @@ from chainer.datasets import get_cifar100
 
 import models.VGG
 
-
 def main():
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
     parser = argparse.ArgumentParser(description='Chainer CIFAR example:')
     parser.add_argument('--dataset', default='cifar10',
                         help='The dataset to use: cifar10 or cifar100')

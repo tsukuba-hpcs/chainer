@@ -1,0 +1,65 @@
+import argparse
+
+'''
+_MultiNodeOptimizer.update():  0 0.13510394096374512 0.0541996955871582 0.07294201850891113 0.007010221481323242
+StandardUpdater.update_core():  0 0.15499281883239746 3.504753112792969e-05 0.1445915699005127
+_MultiNodeOptimizer.update():  2 0.13527274131774902 0.054319143295288086 0.07297563552856445 0.007186174392700195
+StandardUpdater.update_core():  2 0.15495991706848145 3.743171691894531e-05 0.1367511749267578
+_MultiNodeOptimizer.update():  0 0.13498544692993164 0.05457305908203125 0.07195091247558594 0.006806850433349609
+StandardUpdater.update_core():  0 0.14893841743469238 3.504753112792969e-05 0.13891959190368652
+_MultiNodeOptimizer.update():  3 0.13494014739990234 0.05535316467285156 0.07194685935974121 0.00678563117980957
+StandardUpdater.update_core():  3 0.14894413948059082 3.4332275390625e-05 0.13902783393859863
+_MultiNodeOptimizer.update():  1 0.13496160507202148 0.05504965782165527 0.07196784019470215 0.006780385971069336
+StandardUpdater.update_core():  1 0.14894580841064453 3.528594970703125e-05 0.1391291618347168
+_MultiNodeOptimizer.update():  2 0.13518810272216797 0.05521821975708008 0.0720367431640625 0.0070116519927978516
+StandardUpdater.update_core():  2 0.1489393711090088 3.552436828613281e-05 0.13666296005249023
+_MultiNodeOptimizer.update():  1 0.13462090492248535 0.05593156814575195 0.0712125301361084 0.006638050079345703
+StandardUpdater.update_core():  1 0.147965669631958 3.3855438232421875e-05 0.13828134536743164
+_MultiNodeOptimizer.update():  0 0.13496899604797363 0.05601048469543457 0.07116508483886719 0.00687408447265625
+StandardUpdater.update_core():  0 0.1479637622833252 3.218650817871094e-05 0.13751482963562012
+_MultiNodeOptimizer.update():  3 0.13475584983825684 0.05366086959838867 0.07118868827819824 0.006669759750366211
+StandardUpdater.update_core():  3 0.14796805381774902 3.552436828613281e-05 0.13803791999816895
+_MultiNodeOptimizer.update():  2 0.135087251663208 0.05433988571166992 0.07122087478637695 0.006991863250732422
+StandardUpdater.update_core():  2 0.14796853065490723 3.528594970703125e-05 0.13811945915222168
+_MultiNodeOptimizer.update():  3 0.13497281074523926 0.05377030372619629 0.07173490524291992 0.006783962249755859
+StandardUpdater.update_core():  3 0.15498661994934082 3.4332275390625e-05 0.1450181007385254
+_MultiNodeOptimizer.update():  1 0.13491272926330566 0.05425000190734863 0.0717322826385498 0.006723165512084961
+StandardUpdater.update_core():  1 0.15498757362365723 3.3855438232421875e-05 0.14499902725219727
+_MultiNodeOptimizer.update():  0 0.13500595092773438 0.05563831329345703 0.07174324989318848 0.006816864013671875
+StandardUpdater.update_core():  0 0.15494632720947266 5.173683166503906e-05 0.1366581916809082
+_MultiNodeOptimizer.update():  2 0.13518905639648438 0.054276466369628906 0.07178378105163574 0.007000923156738281
+StandardUpdater.update_core():  2 0.15498638153076172 3.743171691894531e-05 0.1450495719909668
+'''
+
+def main(log):
+    load_minibatch = []
+    forward = []
+    allreduce = []
+    backward = []
+
+    with open(log, "r") as f:
+        for l in f:
+            l = l.strip()
+            if l.startswith("_MultiNodeOptimizer.update():"):
+                splitted = l.split(' ')
+                forward.append(float(splitted[4]))
+                allreduce.append(float(splitted[5]))
+                backward.append(float(splitted[6]))
+                continue
+
+            if l.startswith("StandardUpdater.update_core():"):
+                splitted = l.split(' ')
+                load_minibatch.append(float(splitted[4]))
+
+    print(
+        f'{sum(load_minibatch)},{sum(forward)},{sum(allreduce)},{sum(backward)}'
+    )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--log", "-l", type=str, required=True)
+    args = parser.parse_args()
+
+    main('/work/NBB/serihiro/src/chainer/examples/chainermn/imagenet/evaluation_for_swopp/executables/100times/' + args.log)
+

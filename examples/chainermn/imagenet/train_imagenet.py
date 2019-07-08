@@ -200,7 +200,7 @@ def main():
 
     checkpoint_interval = (10, 'iteration') if args.test else (1, 'epoch')
     val_interval = (10, 'iteration') if args.test else (1, 'epoch')
-    log_interval = (10, 'iteration') if args.test else (1, 'epoch')
+    log_interval = (10, 'iteration') if args.test else (100, 'iteration')
 
     checkpointer = chainermn.create_multi_node_checkpointer(
         name='imagenet-example', comm=comm)

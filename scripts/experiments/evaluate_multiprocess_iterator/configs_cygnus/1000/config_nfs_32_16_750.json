@@ -1,0 +1,8 @@
+{
+  "train": "/work/NBB/serihiro/dataset/imagenet/256x256_all/train.ssv",
+  "root": "/work/NBB/serihiro/dataset/imagenet/256x256_all",
+  "batch_size": 32,
+  "n_processes": 16,
+  "n_prefetch": 750,
+  "count": 1000
+}

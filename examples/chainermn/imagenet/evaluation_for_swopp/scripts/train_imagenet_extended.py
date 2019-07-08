@@ -252,7 +252,7 @@ def main():
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = chainermn.create_multi_node_optimizer(
-        chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
+        chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm, measure=True)
     optimizer.setup(model)
 
     # Set up a trainer
@@ -261,7 +261,7 @@ def main():
 
     checkpoint_interval = (10, 'iteration') if args.test else (1, 'epoch')
     val_interval = (10, 'iteration') if args.test else (1, 'epoch')
-    log_interval = (10, 'iteration') if args.test else (100, 'iteration')
+    log_interval = (10, 'iteration') if args.test else (1, 'epoch')
 
     # checkpointer = chainermn.create_multi_node_checkpointer(
     #    name='imagenet-example', comm=comm)

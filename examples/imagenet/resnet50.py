@@ -5,7 +5,7 @@ import chainer
 import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
-
+from chainer import static_graph
 
 class BottleNeckA(chainer.Chain):
 
@@ -83,7 +83,7 @@ class ResNet50(chainer.Chain):
 
     insize = 224
 
-    def __init__(self):
+    def __init__(self, static=False):
         super(ResNet50, self).__init__()
         with self.init_scope():
             self.conv1 = L.Convolution2D(
@@ -94,6 +94,7 @@ class ResNet50(chainer.Chain):
             self.res4 = Block(6, 512, 256, 1024)
             self.res5 = Block(3, 1024, 512, 2048)
             self.fc = L.Linear(2048, 1000)
+            self.static = static
 
     def forward(self, x, t):
         h = self.bn1(self.conv1(x))
@@ -108,3 +109,4 @@ class ResNet50(chainer.Chain):
         loss = F.softmax_cross_entropy(h, t)
         chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
         return loss
+

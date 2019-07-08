@@ -51,7 +51,8 @@ def main():
         '''
     elapsed_time = time.time() - s
     # sys.stderr.write('\n')
-    print(elapsed_time)
+    print(elapsed_times)
+    print('total', elapsed_time)
 
     '''
     elapsed_times = np.array(elapsed_times)
