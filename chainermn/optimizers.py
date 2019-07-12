@@ -46,14 +46,14 @@ class _MultiNodeOptimizer(object):
             start_forward = time.time()  # timer
             loss = lossfun(*args, **kwds)
             self._forward_total_time += time.time() - start_forward  # timer
+            start_backward = time.time()  # timer
             if use_cleargrads:
                 target.cleargrads()
             else:
                 target.zerograds()
-            start_backward = time.time()  # timer
             loss.backward(loss_scale=self.actual_optimizer._loss_scale)
-            self._backward_total_time += time.time() - start_backward  # timer
             del loss
+            self._backward_total_time += time.time() - start_backward  # timer
 
         if self.is_changed(target):
             start_bcast_data = time.time()

@@ -816,30 +816,30 @@ class GradientMethod(Optimizer):
             start_forward = time.time()  # timer
             loss = lossfun(*args, **kwds)
             self._forward_total_time += time.time() - start_forward  # timer
+            start_backward = time.time()  # timer
             if use_cleargrads:
                 self.target.cleargrads()
             else:
                 self.target.zerograds()
-            start_backward = time.time()  # timer
             loss.backward(loss_scale=self._loss_scale)
-            self._backward_total_time += time.time() - start_backward  # timer
             del loss
+            self._backward_total_time += time.time() - start_backward  # timer
 
+        start_param_update = time.time()  # timer
         self.reallocate_cleared_grads()
         self.check_nan_in_grads()
         self.call_hooks('pre')
 
         self.t += 1
         if self.is_safe_to_update():
-            start_param_update = time.time()  # timer
             for param in self.target.params():
                 param.update()
-            self._param_update_total_time += time.time() - start_param_update  # timer
 
         self.reallocate_cleared_grads()
 
         self.call_hooks('post')
         self.update_loss_scale()
+        self._param_update_total_time += time.time() - start_param_update  # timer
 
     def use_cleargrads(self, use=True):
         """Enables or disables use of :func:`~chainer.Link.cleargrads` in `update`.

@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import traceback
+import mpi4py.MPI
 
 import six
 
@@ -354,12 +355,18 @@ class Trainer(object):
 
         self._final_elapsed_time = self.elapsed_time
         self._done = True
+
+        mpi_comm = mpi4py.MPI.COMM_WORLD
+        rank = mpi_comm.Get_rank()
         other = self.updater.update_total_time - self.updater.iterator_next_total_time - \
-            self.updater.forward_total_time - self.updater.backward_total_time - \
-            self.updater.param_update_total_time
-        print('total,iterator_next,forward,backward,param_update,other', file=sys.stderr)
-        print(f'{self.updater.update_total_time},{self.updater.iterator_next_total_time},' +
-              f'{self.updater.forward_total_time},{self.updater.backward_total_time},' +
+            self.updater.converter_total_time - self.updater.forward_total_time - \
+            self.updater.backward_total_time - self.updater.param_update_total_time
+        print(f'{rank},' +
+              f'{self.updater.update_total_time},' +
+              f'{self.updater.iterator_next_total_time},' +
+              f'{self.updater.converter_total_time},' +
+              f'{self.updater.forward_total_time},' +
+              f'{self.updater.backward_total_time},' +
               f'{self.updater.param_update_total_time},' +
               f'{other}'
               ,

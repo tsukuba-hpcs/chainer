@@ -105,6 +105,7 @@ class StandardUpdater(_updater.Updater):
 
         self._update_total_time = 0.0  # timer
         self._iterator_next_total_time = 0.0  # timer
+        self._converter_total_time = 0.0  # timer
 
     @property
     def epoch(self):
@@ -129,6 +130,10 @@ class StandardUpdater(_updater.Updater):
     @property  # timer
     def iterator_next_total_time(self):
         return self._iterator_next_total_time
+
+    @property
+    def converter_total_time(self):
+        return self._converter_total_time
 
     @property  # timer
     def forward_total_time(self):
@@ -206,7 +211,9 @@ class StandardUpdater(_updater.Updater):
         iterator_next_start = time.time()  # timer
         batch = iterator.next()
         self._iterator_next_total_time += time.time() - iterator_next_start  # timer
+        converter_start = time.time()  # timer
         in_arrays = convert._call_converter(self.converter, batch, self.device)
+        self._converter_total_time += time.time() - converter_start  # timer
 
         optimizer = self._optimizers['main']
         loss_func = self.loss_func or optimizer.target
