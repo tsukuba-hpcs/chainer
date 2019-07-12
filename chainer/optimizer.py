@@ -6,6 +6,7 @@ import warnings
 import math
 import numpy
 import six
+import time
 
 import chainer
 from chainer import backend
@@ -744,6 +745,21 @@ class GradientMethod(Optimizer):
         super(GradientMethod, self).__init__()
         self.hyperparam = Hyperparameter()
         self._use_fp32_update = False
+        self._forward_total_time = 0.0  # timer
+        self._backward_total_time = 0.0  # timer
+        self._param_update_total_time = 0.0  # timer
+
+    @property  # timer
+    def forward_total_time(self):
+        return self._forward_total_time
+
+    @property  # timer
+    def backward_total_time(self):
+        return self._backward_total_time
+
+    @property  # timer
+    def param_update_total_time(self):
+        return self._param_update_total_time
 
     def setup(self, link):
         super(GradientMethod, self).setup(link)
@@ -797,12 +813,16 @@ class GradientMethod(Optimizer):
         """
         if lossfun is not None:
             use_cleargrads = getattr(self, '_use_cleargrads', True)
+            start_forward = time.time()  # timer
             loss = lossfun(*args, **kwds)
+            self._forward_total_time += time.time() - start_forward  # timer
             if use_cleargrads:
                 self.target.cleargrads()
             else:
                 self.target.zerograds()
+            start_backward = time.time()  # timer
             loss.backward(loss_scale=self._loss_scale)
+            self._backward_total_time += time.time() - start_backward  # timer
             del loss
 
         self.reallocate_cleared_grads()
@@ -811,8 +831,10 @@ class GradientMethod(Optimizer):
 
         self.t += 1
         if self.is_safe_to_update():
+            start_param_update = time.time()  # timer
             for param in self.target.params():
                 param.update()
+            self._param_update_total_time += time.time() - start_param_update  # timer
 
         self.reallocate_cleared_grads()
 

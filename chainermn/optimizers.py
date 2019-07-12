@@ -1,5 +1,7 @@
-import chainer
 import copy
+import time
+
+import chainer
 
 
 class _MultiNodeOptimizer(object):
@@ -11,24 +13,59 @@ class _MultiNodeOptimizer(object):
             'actual_optimizer', actual_optimizer)
         super(_MultiNodeOptimizer, self).__setattr__(
             'target_params', [])
+        self._forward_total_time = 0.0  # timer
+        self._backward_total_time = 0.0  # timer
+        self._bcast_data_total_time = 0.0  # timer
+        self._allreduce_grad_total_time = 0.0  # timer
+        self._actual_optimizer_update_total_time = 0.0  # timer
+
+    @property  # timer
+    def forward_total_time(self):
+        return self._forward_total_time
+
+    @property  # timer
+    def backward_total_time(self):
+        return self._backward_total_time
+
+    @property  # timer
+    def bcast_data_total_time(self):
+        return self._bcast_data_total_time
+
+    @property  # timer
+    def allreduce_grad_total_time(self):
+        return self._allreduce_grad_total_time
+
+    @property  # timer
+    def actual_optimizer_update_total_time(self):
+        return self._actual_optimizer_update_total_time
 
     def update(self, lossfun=None, *args, **kwds):
         target = self.target
         if lossfun is not None:
             use_cleargrads = getattr(self, '_use_cleargrads', True)
+            start_forward = time.time()  # timer
             loss = lossfun(*args, **kwds)
+            self._forward_total_time += time.time() - start_forward  # timer
             if use_cleargrads:
                 target.cleargrads()
             else:
                 target.zerograds()
+            start_backward = time.time()  # timer
             loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+            self._backward_total_time += time.time() - start_backward  # timer
             del loss
 
         if self.is_changed(target):
+            start_bcast_data = time.time()
             self.communicator.bcast_data(target)
+            self._bcast_data_total_time += time.time() - start_bcast_data
         else:
+            start_allreduce_grad = time.time()  # timer
             self.communicator.allreduce_grad(target)
+            self._allreduce_grad_total_time += time.time() - start_allreduce_grad  # timer
+            start_actual_optimizer_update = time.time()  # timer
             self.actual_optimizer.update(None, *args, **kwds)
+            self._actual_optimizer_update_total_time += time.time() - start_actual_optimizer_update  # timer
 
     def is_changed(self, target):
         previous_params = self.target_params

@@ -1,3 +1,5 @@
+import time
+
 import six
 
 from chainer import backend
@@ -8,7 +10,6 @@ from chainer.training import _updater
 
 
 class StandardUpdater(_updater.Updater):
-
     """Standard implementation of Updater.
 
     This is the standard implementation of :class:`~chainer.training.Updater`.
@@ -102,6 +103,9 @@ class StandardUpdater(_updater.Updater):
             for o in six.itervalues(self._optimizers):
                 o.use_auto_new_epoch = True
 
+        self._update_total_time = 0.0  # timer
+        self._iterator_next_total_time = 0.0  # timer
+
     @property
     def epoch(self):
         return self._iterators['main'].epoch
@@ -117,6 +121,26 @@ class StandardUpdater(_updater.Updater):
     @property
     def is_new_epoch(self):
         return self._iterators['main'].is_new_epoch
+
+    @property  # timer
+    def update_total_time(self):
+        return self._update_total_time
+
+    @property  # timer
+    def iterator_next_total_time(self):
+        return self._iterator_next_total_time
+
+    @property  # timer
+    def forward_total_time(self):
+        return self._optimizers['main'].forward_total_time
+
+    @property  # timer
+    def backward_total_time(self):
+        return self._optimizers['main'].backward_total_time
+
+    @property
+    def param_update_total_time(self):
+        return self._optimizers['main'].param_update_total_time
 
     def finalize(self):
         """Finalizes the updater object.
@@ -172,12 +196,16 @@ class StandardUpdater(_updater.Updater):
         This method is called once at each iteration of the training loop.
 
         """
+        update_core_start = time.time()  # timer
         self.update_core()
         self.iteration += 1
+        self._update_total_time += time.time() - update_core_start  # timer
 
     def update_core(self):
         iterator = self._iterators['main']
+        iterator_next_start = time.time()  # timer
         batch = iterator.next()
+        self._iterator_next_total_time += time.time() - iterator_next_start  # timer
         in_arrays = convert._call_converter(self.converter, batch, self.device)
 
         optimizer = self._optimizers['main']

@@ -12,7 +12,6 @@ from chainer.training import extension as extension_module
 from chainer.training import trigger as trigger_module
 from chainer.utils import argument
 
-
 # Select the best-resolution timer function
 try:
     _get_time = time.perf_counter
@@ -32,7 +31,6 @@ class _ExtensionEntry(object):
 
 
 class Trainer(object):
-
     """The standard training loop in Chainer.
 
     Trainer is an implementation of a training loop. Users can invoke the
@@ -222,7 +220,7 @@ class Trainer(object):
             argument.check_unexpected_kwargs(
                 kwargs,
                 invoke_before_training='invoke_before_training has been '
-                'removed since Chainer v2.0.0. Use initializer= instead.')
+                                       'removed since Chainer v2.0.0. Use initializer= instead.')
             argument.assert_kwargs_empty(kwargs)
 
         if name is None:
@@ -356,6 +354,16 @@ class Trainer(object):
 
         self._final_elapsed_time = self.elapsed_time
         self._done = True
+        other = self.updater.update_total_time - self.updater.iterator_next_total_time - \
+            self.updater.forward_total_time - self.updater.backward_total_time - \
+            self.updater.param_update_total_time
+        print('total,iterator_next,forward,backward,param_update,other', file=sys.stderr)
+        print(f'{self.updater.update_total_time},{self.updater.iterator_next_total_time},' +
+              f'{self.updater.forward_total_time},{self.updater.backward_total_time},' +
+              f'{self.updater.param_update_total_time},' +
+              f'{other}'
+              ,
+              file=sys.stderr)  # timer
 
     def serialize(self, serializer):
         self.updater.serialize(serializer['updater'])
