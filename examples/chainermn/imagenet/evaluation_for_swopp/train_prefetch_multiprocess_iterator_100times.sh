@@ -24,8 +24,8 @@ mkdir -p ${ROOT}/logs/prefetch_multiprocess_100times/${np}
 
 /usr/sbin/dropcaches 3
 
-# /system/apps/cuda/10.1/bin/nvprof \
-    # -o ${ROOT}/logs/prefetch_multiprocess_100times/${np}/${CURRENT_DATETIME}.%q{OMPI_COMM_WORLD_RANK}.nvvp \
+/system/apps/cuda/10.1/bin/nvprof \
+    -o ${ROOT}/logs/prefetch_multiprocess_100times/${np}/${CURRENT_DATETIME}.%q{OMPI_COMM_WORLD_RANK}.nvvp \
     /work/1/NBB/serihiro/venv/default/bin/python ${ROOT}/scripts/train_imagenet_extended_100times.py \
     /work/NBB/serihiro/dataset/imagenet/256x256_all/train.ssv \
     /work/NBB/serihiro/dataset/imagenet/256x256_all/val.ssv \

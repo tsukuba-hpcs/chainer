@@ -68,8 +68,8 @@ copy_end_time=`date +%s`
 time=$((copy_end_time - copy_start_time))
 echo "`hostname`: copy_elapsed_time: ${time}"
 
-# /system/apps/cuda/10.1/bin/nvprof \
-    # -o ${ROOT}/logs/multiprocess_iterator_ssd_100times/${np}/${CURRENT_DATETIME}.%q{OMPI_COMM_WORLD_RANK}.nvvp \
+/system/apps/cuda/10.1/bin/nvprof \
+    -o ${ROOT}/logs/multiprocess_iterator_ssd_100times/${np}/${CURRENT_DATETIME}.%q{OMPI_COMM_WORLD_RANK}.nvvp \
     /work/1/NBB/serihiro/venv/default/bin/python ${ROOT}/scripts/train_imagenet_extended_100times.py \
     /scr/256x256_all/train.ssv \
     /scr/256x256_all/val.ssv \
