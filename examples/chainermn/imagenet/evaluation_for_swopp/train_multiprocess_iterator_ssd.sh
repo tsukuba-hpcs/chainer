@@ -32,6 +32,8 @@ DUMMY_FILE="/tmp/dummy.${CURRENT_DATETIME}.`hostname`"
 LOCK_FILE="/tmp/lock_file.${CURRENT_DATETIME}.`hostname`"
 MPSTAT_LOG_FILE="/${LOG_DIR}/mpstat_`hostname`"
 MPSTAT_PROC=-1
+VMSTAT_LOG_FILE="/${LOG_DIR}/vmstat_`hostname`"
+VMSTAT_PROC=-1
 
 touch $DUMMY_FILE
 
@@ -66,10 +68,15 @@ else
     echo `hostname`': released the lock'
 
     
-    echo `hostname`": start mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
-    mpstat -P ALL 1 > $MPSTAT_LOG_FILE &
+    echo `hostname`": start mpstat -P ALL 10 > $MPSTAT_LOG_FILE &"
+    mpstat -P ALL 10 > $MPSTAT_LOG_FILE &
     MPSTAT_PROC=$!
-    echo `hostname`": finish mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
+    echo `hostname`": finish mpstat -P ALL 10 > $MPSTAT_LOG_FILE &"
+    
+    echo `hostname`": start vmstat > $VMSTAT_LOG_FILE &"
+    vmstat -n 10 | gawk '{ print strftime("%Y/%m/%d %H:%M:%S"), $0 } { fflush() }' > $VMSTAT_LOG_FILE &
+    VMSTAT_PROC=$!
+    echo `hostname`": finish vmstat > $VMSTAT_LOG_FILE &"
 
     /usr/sbin/dropcaches 3
 fi
@@ -90,7 +97,7 @@ echo "`hostname`: copy_elapsed_time: ${time}"
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 1 \
+  --epoch 2 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
   # --communicator hierarchical 2>> ${LOG_STDERR}
@@ -101,5 +108,9 @@ if [ $MPSTAT_PROC -ne -1 ]; then
     echo `hostname`": start kill -SIGINT MPSTAT_PROC"
     kill -INT $MPSTAT_PROC
     echo `hostname`": finish kill -SIGINT MPSTAT_PROC"
+    
+    echo `hostname`": start kill -SIGINT VMTAT_PROC"
+    kill -TERM $VMSTAT_PROC
+    echo `hostname`": finish kill -SIGINT VMSTAT_PROC"
 fi
 
