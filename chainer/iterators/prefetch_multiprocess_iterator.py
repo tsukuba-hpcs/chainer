@@ -484,18 +484,10 @@ class _PrefetchPipeline:
 
     def _generate_batch_loop(self):
         alive = True
-        try:
-            while alive:
-                if _prefetch_multiprocess_iterator_terminating.is_set():
-                    break
-                alive = self._generate_batch_task()
-        finally:
-            if self._generate_batch_pool is not None:
-                self._generate_batch_pool.close()
-                self._generate_batch_pool.terminate()
-                self._generate_batch_pool.join()
-
-                self._generate_batch_pool = None
+        while alive:
+            if _prefetch_multiprocess_iterator_terminating.is_set():
+                break
+            alive = self._generate_batch_task()
 
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
