@@ -18,6 +18,8 @@ class _MultiNodeOptimizer(object):
         self._bcast_data_total_time = 0.0  # timer
         self._allreduce_grad_total_time = 0.0  # timer
         self._actual_optimizer_update_total_time = 0.0  # timer
+        self._bcast_count = 0  # debug
+        self._allreduce_grad_count = 0  # debug
 
     @property  # timer
     def forward_total_time(self):
@@ -38,6 +40,14 @@ class _MultiNodeOptimizer(object):
     @property  # timer
     def actual_optimizer_update_total_time(self):
         return self._actual_optimizer_update_total_time
+
+    @property
+    def bcast_count(self):
+        return self._bcast_count
+
+    @property
+    def allreduce_grad_count(self):
+        return self._allreduce_grad_count
 
     def update(self, lossfun=None, *args, **kwds):
         target = self.target

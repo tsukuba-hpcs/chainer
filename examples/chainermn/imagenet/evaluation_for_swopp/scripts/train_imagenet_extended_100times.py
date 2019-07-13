@@ -1,28 +1,25 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+
 import argparse
 import multiprocessing
 import random
 import sys
-
-import numpy as np
-
-import chainer
-import chainer.cuda
-from chainer import training
-from chainer.training import extensions
-
-import chainermn
-
-from chainer_profutil import create_marked_profile_optimizer
-
 
 import models.alex as alex
 import models.googlenet as googlenet
 import models.googlenetbn as googlenetbn
 import models.nin as nin
 import models.resnet50 as resnet50
+import numpy as np
+from chainer_profutil import create_marked_profile_optimizer
+
+import chainer
+import chainer.cuda
+import chainermn
+from chainer import training
+from chainer.training import extensions
 
 # Check Python version if it supports multiprocessing.set_start_method,
 # which was introduced in Python 3.4
@@ -79,7 +76,6 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
         image -= self.mean[:, top:bottom, left:right]
         image *= (1.0 / 255.0)  # Scale to [0, 1]
         return image, label
-
 
     def get_example(self, i):
         # It reads the i-th image/label pair and return a preprocessed image.
@@ -229,38 +225,51 @@ def main():
 
     if args.iterator == 'prefetch_multiprocess':
         train_iter = chainer.iterators.PrefetchMultiprocessIterator(
-            dataset=train, 
-            batch_size=args.batchsize, 
+            dataset=train,
+            batch_size=args.batchsize,
             local_storage_base=args.local_storage_base,
             n_prefetch=args.n_prefetch,
             n_prefetch_from_backend=args.prefetchjob,
             n_generate_batch=args.loaderjob,
-            dataset_start = train.start,
-            dataset_finish = train.finish
+            dataset_start=train.start,
+            dataset_finish=train.finish
         )
     else:
         # A workaround for processes crash should be done before making
         # communicator above, when using fork (e.g. MultiProcessIterator)
         # along with Infiniband.
         train_iter = chainer.iterators.MultiprocessIterator(
-                train, args.batchsize, n_processes=args.loaderjob)
-        
+            train, args.batchsize, n_processes=args.loaderjob)
+
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = create_marked_profile_optimizer(
-                    chainermn.create_multi_node_optimizer(
-                        chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm),
-                    sync=True, sync_level=3)
+        chainermn.create_multi_node_optimizer(
+            chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm),
+        sync=True, sync_level=3)
     optimizer.setup(model)
 
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
 
-    if args.resume:
-        chainer.serializers.load_npz(args.resume, trainer)
-
     for _ in range(100):
         updater.update()
+
+    actual_optimizer = updater.get_optimizer('main')
+    other = updater.update_total_time - updater.iterator_next_total_time - \
+            updater.converter_total_time - updater.bcast_data_total_time - \
+            updater.allreduce_grad_total_time - updater.actual_optimizer_update_total_time
+    print(f'{comm.rank},' +
+          f'{updater.update_total_time},' +
+          f'{updater.iterator_next_total_time},' +
+          f'{updater.converter_total_time},' +
+          f'{updater.bcast_data_total_time},' +
+          f'{updater.allreduce_grad_total_time},' +
+          f'{updater.actual_optimizer_update_total_time},' +
+          f'{other},' +
+          f'{actual_optimizer.bcast_count},' +
+          f'{actual_optimizer.allreduce_grad_count}'
+          ,
+          file=sys.stderr)  # timer
 
 
 if __name__ == '__main__':
     main()
-
