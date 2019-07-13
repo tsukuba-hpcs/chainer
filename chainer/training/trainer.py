@@ -364,8 +364,8 @@ class Trainer(object):
             rank = mpi_comm.Get_rank()
 
             other = self.updater.update_total_time - self.updater.iterator_next_total_time - \
-                    self.updater.converter_total_time - self.updater.bcast_data_total_time - \
-                    self.updater.allreduce_grad_total_time - self.updater.actual_optimizer_update_total_time
+                    self.updater.converter_total_time - optimizer.bcast_data_total_time - \
+                    optimizer.allreduce_grad_total_time - optimizer.actual_optimizer_update_total_time
             print(f'{rank},' +
                   f'{self.updater.update_total_time},' +
                   f'{self.updater.iterator_next_total_time},' +
