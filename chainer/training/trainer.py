@@ -370,9 +370,9 @@ class Trainer(object):
                   f'{self.updater.update_total_time},' +
                   f'{self.updater.iterator_next_total_time},' +
                   f'{self.updater.converter_total_time},' +
-                  f'{self.updater.bcast_data_total_time},' +
-                  f'{self.updater.allreduce_grad_total_time},' +
-                  f'{self.updater.actual_optimizer_update_total_time},' +
+                  f'{optimizer.bcast_data_total_time},' +
+                  f'{optimizer.allreduce_grad_total_time},' +
+                  f'{optimizer.actual_optimizer_update_total_time},' +
                   f'{other},' +
                   f'{optimizer.bcast_count},' +
                   f'{optimizer.allreduce_grad_count}'

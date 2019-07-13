@@ -261,9 +261,9 @@ def main():
           f'{updater.update_total_time},' +
           f'{updater.iterator_next_total_time},' +
           f'{updater.converter_total_time},' +
-          f'{updater.bcast_data_total_time},' +
-          f'{updater.allreduce_grad_total_time},' +
-          f'{updater.actual_optimizer_update_total_time},' +
+          f'{actual_optimizer.bcast_data_total_time},' +
+          f'{actual_optimizer.allreduce_grad_total_time},' +
+          f'{actual_optimizer.actual_optimizer_update_total_time},' +
           f'{other},' +
           f'{actual_optimizer.bcast_count},' +
           f'{actual_optimizer.allreduce_grad_count}'
