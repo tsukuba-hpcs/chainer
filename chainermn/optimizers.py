@@ -66,10 +66,12 @@ class _MultiNodeOptimizer(object):
             self._backward_total_time += time.time() - start_backward  # timer
 
         if self.is_changed(target):
+            self._bcast_count += 1  # debug
             start_bcast_data = time.time()
             self.communicator.bcast_data(target)
             self._bcast_data_total_time += time.time() - start_bcast_data
         else:
+            self._allreduce_grad_count += 1  # debug
             start_allreduce_grad = time.time()  # timer
             self.communicator.allreduce_grad(target)
             self._allreduce_grad_total_time += time.time() - start_allreduce_grad  # timer
