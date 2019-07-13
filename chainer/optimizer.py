@@ -885,6 +885,11 @@ class GradientMethod(Optimizer):
             for param in link.params():
                 param.update_rule.use_fp32_update()
 
+    def init_timer(self):
+        self._forward_total_time = 0.0  # timer
+        self._backward_total_time = 0.0  # timer
+        self._param_update_total_time = 0.0  # timer
+
 
 class HyperparameterProxy(object):
 

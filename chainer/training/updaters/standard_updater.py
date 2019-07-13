@@ -1,3 +1,4 @@
+import sys
 import time
 
 import six
@@ -67,7 +68,7 @@ class StandardUpdater(_updater.Updater):
 
     def __init__(self, iterator, optimizer, converter=convert.concat_examples,
                  device=None, loss_func=None, loss_scale=None,
-                 auto_new_epoch=True):
+                 auto_new_epoch=True, use_chainermn=False):
         if device is not None:
             device = backend.get_device(device)
 
@@ -106,6 +107,7 @@ class StandardUpdater(_updater.Updater):
         self._update_total_time = 0.0  # timer
         self._iterator_next_total_time = 0.0  # timer
         self._converter_total_time = 0.0  # timer
+        self._use_chainermn = use_chainermn  # timer
 
     @property
     def epoch(self):
@@ -206,6 +208,10 @@ class StandardUpdater(_updater.Updater):
         self.iteration += 1
         self._update_total_time += time.time() - update_core_start  # timer
 
+        if self.is_new_epoch:
+            self.print_elapsed_times()  # timer
+            self.init_timer()  # timer
+
     def update_core(self):
         iterator = self._iterators['main']
         iterator_next_start = time.time()  # timer
@@ -238,3 +244,59 @@ class StandardUpdater(_updater.Updater):
             optimizer.target.serialize(serializer['model:' + name])
 
         self.iteration = serializer('iteration', self.iteration)
+
+    def print_elapsed_times(self):
+        optimizer = self.get_optimizer('main')
+        if self._use_chainermn:
+            import mpi4py.MPI
+            mpi_comm = mpi4py.MPI.COMM_WORLD
+            rank = mpi_comm.Get_rank()
+
+            other = self.update_total_time - \
+                    self.iterator_next_total_time - \
+                    self.converter_total_time - \
+                    self.forward_total_time - \
+                    self.backward_total_time - \
+                    optimizer.bcast_data_total_time - \
+                    optimizer.allreduce_grad_total_time - \
+                    optimizer.actual_optimizer_update_total_time
+            print(f'{self.epoch},' +
+                  f'{rank},' +
+                  f'{self.update_total_time},' +
+                  f'{self.iterator_next_total_time},' +
+                  f'{self.converter_total_time},' +
+                  f'{self.forward_total_time},' +
+                  f'{self.backward_total_time},' +
+                  f'{optimizer.bcast_data_total_time},' +
+                  f'{optimizer.allreduce_grad_total_time},' +
+                  f'{optimizer.actual_optimizer_update_total_time},' +
+                  f'{other},' +
+                  f'{optimizer.bcast_count},' +
+                  f'{optimizer.allreduce_grad_count}'
+                  ,
+                  file=sys.stderr)  # timer
+        else:
+            other = self.update_total_time - \
+                    self.iterator_next_total_time - \
+                    self.converter_total_time - \
+                    self.forward_total_time - \
+                    self.backward_total_time - \
+                    self.param_update_total_time
+            print(f'{self.epoch},' +
+                  f'{self.update_total_time},' +
+                  f'{self.iterator_next_total_time},' +
+                  f'{self.converter_total_time},' +
+                  f'{self.forward_total_time},' +
+                  f'{self.backward_total_time},' +
+                  f'{self.param_update_total_time},' +
+                  f'{other}'
+                  ,
+                  file=sys.stderr)  # timer
+
+    def init_timer(self):
+        self._update_total_time = 0.0  # timer
+        self._iterator_next_total_time = 0.0  # timer
+        self._converter_total_time = 0.0  # timer
+
+        optimizer = self.get_optimizer('main')
+        optimizer.init_timer()

@@ -248,7 +248,7 @@ def main():
         sync=True, sync_level=3)
     optimizer.setup(model)
 
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    updater = training.StandardUpdater(train_iter, optimizer, device=device, use_chainermn=True)
 
     for _ in range(10):
         updater.update()

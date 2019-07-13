@@ -102,6 +102,15 @@ class _MultiNodeOptimizer(object):
     def __setattr__(self, attr_name, value):
         setattr(self.actual_optimizer, attr_name, value)
 
+    def init_timer(self):
+        self._forward_total_time = 0.0  # timer
+        self._backward_total_time = 0.0  # timer
+        self._bcast_data_total_time = 0.0  # timer
+        self._allreduce_grad_total_time = 0.0  # timer
+        self._actual_optimizer_update_total_time = 0.0  # timer
+        self._bcast_count = 0  # debug
+        self._allreduce_grad_count = 0  # debug
+
 
 class _DoubleBufferingOptimizer(object):
 
