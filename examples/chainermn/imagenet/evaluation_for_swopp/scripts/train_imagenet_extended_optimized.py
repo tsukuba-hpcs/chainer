@@ -270,7 +270,7 @@ def main():
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), args.out)
+    trainer = training.Trainer(updater, (args.epoch, 'epoch'), args.out, use_chainermn=True)
 
     checkpoint_interval = (10, 'iteration') if args.test else (1, 'epoch')
     val_interval = (10, 'iteration') if args.test else (1, 'epoch')
