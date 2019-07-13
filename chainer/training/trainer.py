@@ -356,20 +356,26 @@ class Trainer(object):
         self._final_elapsed_time = self.elapsed_time
         self._done = True
 
-
         optimizer = self.updater.get_optimizer('main')
         if self._use_chainermn:
             import mpi4py.MPI
             mpi_comm = mpi4py.MPI.COMM_WORLD
             rank = mpi_comm.Get_rank()
 
-            other = self.updater.update_total_time - self.updater.iterator_next_total_time - \
-                    self.updater.converter_total_time - optimizer.bcast_data_total_time - \
-                    optimizer.allreduce_grad_total_time - optimizer.actual_optimizer_update_total_time
+            other = self.updater.update_total_time - \
+                    self.updater.iterator_next_total_time - \
+                    self.updater.converter_total_time - \
+                    self.updater.forward_total_time - \
+                    self.updater.backward_total_time - \
+                    optimizer.bcast_data_total_time - \
+                    optimizer.allreduce_grad_total_time - \
+                    optimizer.actual_optimizer_update_total_time
             print(f'{rank},' +
                   f'{self.updater.update_total_time},' +
                   f'{self.updater.iterator_next_total_time},' +
                   f'{self.updater.converter_total_time},' +
+                  f'{self.updater.forward_total_time},' +
+                  f'{self.updater.backward_total_time},' +
                   f'{optimizer.bcast_data_total_time},' +
                   f'{optimizer.allreduce_grad_total_time},' +
                   f'{optimizer.actual_optimizer_update_total_time},' +
@@ -379,9 +385,12 @@ class Trainer(object):
                   ,
                   file=sys.stderr)  # timer
         else:
-            other = self.updater.update_total_time - self.updater.iterator_next_total_time - \
-                self.updater.converter_total_time - self.updater.forward_total_time - \
-                self.updater.backward_total_time - self.updater.param_update_total_time
+            other = self.updater.update_total_time - \
+                    self.updater.iterator_next_total_time - \
+                    self.updater.converter_total_time - \
+                    self.updater.forward_total_time - \
+                    self.updater.backward_total_time - \
+                    self.updater.param_update_total_time
             print(f'0,' +
                   f'{self.updater.update_total_time},' +
                   f'{self.updater.iterator_next_total_time},' +

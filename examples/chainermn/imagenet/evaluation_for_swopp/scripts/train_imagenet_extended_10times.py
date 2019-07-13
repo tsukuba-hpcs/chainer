@@ -254,13 +254,20 @@ def main():
         updater.update()
 
     actual_optimizer = updater.get_optimizer('main')
-    other = updater.update_total_time - updater.iterator_next_total_time - \
-            updater.converter_total_time - actual_optimizer.bcast_data_total_time - \
-            actual_optimizer.allreduce_grad_total_time - actual_optimizer.actual_optimizer_update_total_time
+    other = updater.update_total_time - \
+            updater.iterator_next_total_time - \
+            updater.converter_total_time - \
+            updater.forward_total_time - \
+            updater.backward_total_time - \
+            actual_optimizer.bcast_data_total_time - \
+            actual_optimizer.allreduce_grad_total_time - \
+            actual_optimizer.actual_optimizer_update_total_time
     print(f'{comm.rank},' +
           f'{updater.update_total_time},' +
           f'{updater.iterator_next_total_time},' +
           f'{updater.converter_total_time},' +
+          f'{updater.forward_total_time},' +
+          f'{updater.backward_total_time},' +
           f'{actual_optimizer.bcast_data_total_time},' +
           f'{actual_optimizer.allreduce_grad_total_time},' +
           f'{actual_optimizer.actual_optimizer_update_total_time},' +
