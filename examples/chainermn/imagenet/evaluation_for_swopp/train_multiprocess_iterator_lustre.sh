@@ -19,12 +19,35 @@ export CUDA_PATH=/system/apps/cuda/10.1
 
 ROOT="/work/NBB/serihiro/src/chainer/examples/chainermn/imagenet/evaluation_for_swopp"
 OUT=${ROOT}/results/multiprocess_iterator_lustre/${np}/${CURRENT_DATETIME}
-LOG_STDERR=${ROOT}/logs/multiprocess_iterator_lustre/${np}/${CURRENT_DATETIME}
+LOG_DIR=${ROOT}/logs/multiprocess_iterator_lustre/${np}/${CURRENT_DATETIME}
+LOG_STDERR=${LOG_DIR}/stderr_log
 
 mkdir -p $OUT
-mkdir -p ${ROOT}/logs/multiprocess_iterator_lustre/${np}
+mkdir -p $LOG_DIR
 
-/usr/sbin/dropcaches 3
+DUMMY_FILE="/tmp/dummy.${CURRENT_DATETIME}.`hostname`"
+LOCK_FILE="/tmp/lock_file.${CURRENT_DATETIME}.`hostname`"
+MPSTAT_LOG_FILE="/${LOG_DIR}/mpstat_`hostname`"
+MPSTAT_PROC=-1
+
+touch $DUMMY_FILE
+
+if ! ln -s $DUMMY_FILE $LOCK_FILE; then
+    echo `hostname`": LOCKED"
+
+    while [ -e $LOCK_FILE ]; do
+      sleep 1
+    done
+    echo `hostname`': detected the lock has been released'  
+else
+    echo `hostname`": start mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
+    mpstat -P ALL 1 > $MPSTAT_LOG_FILE &
+    MPSTAT_PROC=$!
+    echo `hostname`": finish mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
+    rm -rf $LOCK_FILE
+    /usr/sbin/dropcaches 3
+fi
+
 
 /work/1/NBB/serihiro/venv/default/bin/python ${ROOT}/scripts/train_imagenet_extended.py \
   /work/NBB/serihiro/dataset/imagenet/256x256_all/train.ssv \
@@ -39,7 +62,12 @@ mkdir -p ${ROOT}/logs/multiprocess_iterator_lustre/${np}
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 2 \
+  --epoch 1 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
 
+if [ $MPSTAT_PROC -ne -1 ]; then
+    echo `hostname`": start kill -SIGINT MPSTAT_PROC"
+    kill -INT $MPSTAT_PROC
+    echo `hostname`": finish kill -SIGINT MPSTAT_PROC"
+fi

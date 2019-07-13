@@ -21,18 +21,21 @@ export CUDA_PATH=/system/apps/cuda/10.1
 
 ROOT="/work/NBB/serihiro/src/chainer/examples/chainermn/imagenet/evaluation_for_swopp"
 OUT=${ROOT}/results/multiprocess_iterator_ssd/${np}/${CURRENT_DATETIME}
-LOG_STDERR=${ROOT}/logs/multiprocess_iterator_ssd/${np}/${CURRENT_DATETIME}
+
+LOG_DIR=${ROOT}/logs/multiprocess_iterator_ssd/${np}/${CURRENT_DATETIME}
+LOG_STDERR=${LOG_DIR}/stderr_log
 
 mkdir -p $OUT
-mkdir -p ${ROOT}/logs/multiprocess_iterator_ssd/${np}
-
-# Copying imagenet files with ONLY ONE PROCESS for each node
+mkdir -p $LOG_DIR
 
 DUMMY_FILE="/tmp/dummy.${CURRENT_DATETIME}.`hostname`"
 LOCK_FILE="/tmp/lock_file.${CURRENT_DATETIME}.`hostname`"
+MPSTAT_LOG_FILE="/${LOG_DIR}/mpstat_`hostname`"
+MPSTAT_PROC=-1
 
 touch $DUMMY_FILE
 
+# Copying imagenet files with ONLY ONE PROCESS for each node
 copy_start_time=`date +%s`
 if ! ln -s $DUMMY_FILE $LOCK_FILE; then
     while [ -e $LOCK_FILE ]; do
@@ -61,6 +64,13 @@ else
     echo `hostname`': finish copying the dataset'
     rm -rf $LOCK_FILE
     echo `hostname`': released the lock'
+
+    
+    echo `hostname`": start mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
+    mpstat -P ALL 1 > $MPSTAT_LOG_FILE &
+    MPSTAT_PROC=$!
+    echo `hostname`": finish mpstat -P ALL 1 > $MPSTAT_LOG_FILE &"
+
     /usr/sbin/dropcaches 3
 fi
 copy_end_time=`date +%s`
@@ -80,9 +90,16 @@ echo "`hostname`: copy_elapsed_time: ${time}"
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 2 \
+  --epoch 1 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
   # --communicator hierarchical 2>> ${LOG_STDERR}
   # --communicator pure_nccl 2>> ${LOG_STDERR}
+
+
+if [ $MPSTAT_PROC -ne -1 ]; then
+    echo `hostname`": start kill -SIGINT MPSTAT_PROC"
+    kill -INT $MPSTAT_PROC
+    echo `hostname`": finish kill -SIGINT MPSTAT_PROC"
+fi
 
