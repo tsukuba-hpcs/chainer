@@ -420,7 +420,6 @@ class _PrefetchPipeline:
         self._launched = True
 
     def terminate(self):
-        global _prefetch_multiprocess_iterator_terminating
         _prefetch_multiprocess_iterator_terminating.set()
 
         if self._generate_random_id_process is not None:
