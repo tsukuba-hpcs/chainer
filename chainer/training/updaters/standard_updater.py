@@ -292,6 +292,7 @@ class StandardUpdater(_updater.Updater):
                   f'{other}'
                   ,
                   file=sys.stderr)  # timer
+        sys.stderr.flush()
 
     def init_timer(self):
         self._update_total_time = 0.0  # timer

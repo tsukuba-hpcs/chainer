@@ -276,7 +276,7 @@ def main():
           f'{actual_optimizer.allreduce_grad_count}'
           ,
           file=sys.stderr)  # timer
-
+    sys.stderr.flush()
 
 if __name__ == '__main__':
     main()
