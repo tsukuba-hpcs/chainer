@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import sys
 import queue
 import shutil
 import threading
@@ -63,7 +64,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.dataset_timeout = dataset_timeout
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
-
+        
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
         self.reset()
 
@@ -223,7 +224,7 @@ class _Communicator(object):
 
     # called from thread
     def put(self, batch, prefetch_state, reset_count):
-        if self._status == _Communicator.STATUS_TERMINATE:
+        if self.is_terminated:
             return
 
         with self._lock:
@@ -437,11 +438,13 @@ class _PrefetchPipeline:
             self._remove_example_process.terminate()
             self._remove_example_process = None
 
+        '''
         for thread in [self._generate_batch_thread]:
             if thread is not None:
                 while thread.is_alive():
                     thread.join(_response_time)
                 thread = None
+        '''
 
         if self._generate_batch_pool is not None:
             self._generate_batch_pool.close()
@@ -487,7 +490,7 @@ class _PrefetchPipeline:
             if _prefetch_multiprocess_iterator_terminating.is_set():
                 break
             alive = self._generate_batch_task()
-
+        
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
 
@@ -577,15 +580,24 @@ def _generate_random_id_loop(
     initial_order = order_sampler(numpy.arange(dataset_length), 0)
     random_id_state = IteratorState(0, 0, False, initial_order)
 
+    '''
+    print(f'{os.uname()[1]}/{os.getpid()}:dataset_length:{dataset_length}', file=sys.stderr)
+    print(f'{os.uname()[1]}/{os.getpid()}:len(initial_order):{len(initial_order)}', file=sys.stderr)
+    print(f'{os.uname()[1]}/{os.getpid()}:random_id_state:{random_id_state}', file=sys.stderr)
+    print(f'{os.uname()[1]}/{os.getpid()}:len(numpy.unique(initial_order)):{len(numpy.unique(initial_order))}', file=sys.stderr)
+    print(f'{os.uname()[1]}/{os.getpid()}:dataset_start:{dataset_start}', file=sys.stderr)
+    sys.stderr.flush()
+    '''
+
     while not _prefetch_multiprocess_iterator_terminating.is_set():
-        for _ in range(prefetch_batch_size):
-            random_id_state, indices = iterator_statemachine(
-                random_id_state,
-                batch_size,
-                repeat,
-                order_sampler,
-                dataset_length
-            )
+        random_id_state, indices = iterator_statemachine(
+            random_id_state,
+            batch_size,
+            repeat,
+            order_sampler,
+            dataset_length
+        )
+
         while True:
             try:
                 # Note: `indices` is an object of numpy.ndarray
