@@ -42,6 +42,8 @@ if ! ln -s $DUMMY_FILE $LOCK_FILE; then
     done
     echo `hostname`': detected the lock has been released'  
 else
+    /usr/sbin/dropcaches 3
+    
     echo `hostname`": start mpstat -P ALL 10 > $MPSTAT_LOG_FILE &"
     mpstat -P ALL 10 > $MPSTAT_LOG_FILE &
     MPSTAT_PROC=$!
@@ -53,7 +55,6 @@ else
     echo `hostname`": finish vmstat > $VMSTAT_LOG_FILE &"
 
     rm -rf $LOCK_FILE
-    /usr/sbin/dropcaches 3
 fi
 
 

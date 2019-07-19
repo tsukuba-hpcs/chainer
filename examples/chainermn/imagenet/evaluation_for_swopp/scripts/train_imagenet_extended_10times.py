@@ -244,7 +244,7 @@ def main():
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = create_marked_profile_optimizer(
         chainermn.create_multi_node_optimizer(
-            chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm, measure=True),
+            chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm),
         sync=True, sync_level=3)
     optimizer.setup(model)
 

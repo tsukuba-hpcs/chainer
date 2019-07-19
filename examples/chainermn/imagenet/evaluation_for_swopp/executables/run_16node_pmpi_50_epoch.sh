@@ -6,7 +6,7 @@
 #PBS -m e
 #PBS -T openmpi
 #PBS -b 16
-#PBS -l elapstim_req=0:15:00
+#PBS -l elapstim_req=6:00:00
 #PBS -v NQSV_MPI_VER=3.1.4/intel-cuda10.1
 #PBS -v LD_LIBRARY_PATH=/work/NBB/serihiro/local/lib:/work/NBB/serihiro/local/lib64:$LD_LIBRARY_PATH
 
@@ -24,5 +24,5 @@ current_datetime=`date +%Y%m%d_%H%M%S`
 time mpirun ${NQSII_MPIOPTS} \
     -x UCX_MAX_RNDV_LANES=4 \
     -np 64 -npernode 4 \
-    ${ROOT}/train_prefetch_multiprocess_iterator.sh 64 ${current_datetime}
+    ${ROOT}/train_prefetch_multiprocess_iterator_50_epoch.sh 64 ${current_datetime}
 

@@ -2,7 +2,9 @@
 
 #PBS -A NBB
 #PBS -q gen_S
-#PBS -l elapstim_req=6:00:00
+#PBS -m e
+#PBS -M nserihiro+cygnus@gmail.com
+#PBS -l elapstim_req=02:00:00
 #PBS -v LD_LIBRARY_PATH=/work/NBB/serihiro/local/lib:/work/NBB/serihiro/local/lib64:$LD_LIBRARY_PATH
 
 module load cuda/10.1
@@ -23,7 +25,9 @@ touch /work/NBB/serihiro/dummy
 cp /work/NBB/serihiro/dummy /scr/local_storage_base
 rm -rf /scr/local_storage_base/*
 
-config="${config_base}/config_32_12_2_1000.json"
+config="${config_base}/config_32_12_2_40000.json"
+
+/usr/sbin/dropcaches 3
 
 python "${ROOT}/scripts/evaluate_prefetch_multiprocess_iterator.py" \
 `config2args "${config}"` \

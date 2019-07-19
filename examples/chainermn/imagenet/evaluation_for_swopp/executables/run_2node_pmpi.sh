@@ -2,7 +2,7 @@
 
 #PBS -A NBB
 #PBS -q gen_S
-#PBS -m b,e
+#PBS -m e
 #PBS -M nserihiro@gmail.com
 #PBS -T openmpi
 #PBS -b 2

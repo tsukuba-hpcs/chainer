@@ -4,6 +4,8 @@
 #PBS -q gen_S
 #PBS -T openmpi
 #PBS -b 1
+#PBS -m e
+#PBS -M nserihiro+cygnus@gmail.com
 #PBS -l elapstim_req=12:00:00
 #PBS -v NQSV_MPI_VER=3.1.4/intel-cuda10.1
 #PBS -v LD_LIBRARY_PATH=/work/NBB/serihiro/local/lib:/work/NBB/serihiro/local/lib64:$LD_LIBRARY_PATH

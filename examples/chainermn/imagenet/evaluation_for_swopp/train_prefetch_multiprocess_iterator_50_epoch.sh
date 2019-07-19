@@ -5,8 +5,6 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-echo 'This is train_multiprocess_iterator_ssd.sh'
-
 np=${1}
 CURRENT_DATETIME=${2}
 
@@ -20,9 +18,8 @@ export CUDA_HOME=/system/apps/cuda/10.1
 export CUDA_PATH=/system/apps/cuda/10.1
 
 ROOT="/work/NBB/serihiro/src/chainer/examples/chainermn/imagenet/evaluation_for_swopp"
-OUT=${ROOT}/results/multiprocess_iterator_ssd/${np}/${CURRENT_DATETIME}
-
-LOG_DIR=${ROOT}/logs/multiprocess_iterator_ssd/${np}/${CURRENT_DATETIME}
+OUT=${ROOT}/results/prefetch_multiprocess_iterator_50_epoch/${np}/${CURRENT_DATETIME}
+LOG_DIR=${ROOT}/logs/prefetch_multiprocess_iterator_50_epoch/${np}/${CURRENT_DATETIME}
 LOG_STDERR=${LOG_DIR}/stderr_log
 
 mkdir -p $OUT
@@ -37,34 +34,14 @@ VMSTAT_PROC=-1
 
 touch $DUMMY_FILE
 
-# Copying imagenet files with ONLY ONE PROCESS for each node
-copy_start_time=`date +%s`
 if ! ln -s $DUMMY_FILE $LOCK_FILE; then
+    echo `hostname`": LOCKED"
+
     while [ -e $LOCK_FILE ]; do
       sleep 1
     done
+    echo `hostname`': detected the lock has been released'  
 else
-    echo `hostname`': got the lock'
-    echo `hostname`': start copying the dataset'
-
-    echo `hostname`': s: cp /work/NBB/serihiro/dataset/imagenet/256x256_all.tar /scr'
-    cp -pr /work/NBB/serihiro/dataset/imagenet/256x256_all.tar /scr
-    echo `hostname`': f: cp /work/NBB/serihiro/dataset/imagenet/256x256_all.tar /scr'
-    
-    cd /scr
-    
-    echo `hostname`': s: tar -xf 256x256_all.tar'
-    tar -xf 256x256_all.tar
-    echo `hostname`': f: tar -xf 256x256_all.tar'
-    
-    cd /scr/256x256_all
-
-    echo `hostname`': s: python2 labeling.py train val'
-    python2 labeling.py train val
-    echo `hostname`': f: python2 labeling.py train val'
-    
-    /usr/sbin/dropcaches 3
-    
     echo `hostname`": start mpstat -P ALL 10 > $MPSTAT_LOG_FILE &"
     mpstat -P ALL 10 > $MPSTAT_LOG_FILE &
     MPSTAT_PROC=$!
@@ -74,35 +51,29 @@ else
     vmstat -n 10 | gawk '{ print strftime("%Y/%m/%d %H:%M:%S"), $0 } { fflush() }' > $VMSTAT_LOG_FILE &
     VMSTAT_PROC=$!
     echo `hostname`": finish vmstat > $VMSTAT_LOG_FILE &"
-
     
-    echo `hostname`': finish copying the dataset'
+    /usr/sbin/dropcaches 3
     rm -rf $LOCK_FILE
-    echo `hostname`': released the lock'
 fi
-copy_end_time=`date +%s`
-time=$((copy_end_time - copy_start_time))
-echo "`hostname`: copy_elapsed_time: ${time}"
 
 /work/1/NBB/serihiro/venv/default/bin/python ${ROOT}/scripts/train_imagenet_extended.py \
-  /scr/256x256_all/train.ssv \
-  /scr/256x256_all/val.ssv \
-  --mean /scr/256x256_all/mean.npy \
-  --root /scr/256x256_all/train \
+  /work/NBB/serihiro/dataset/imagenet/256x256_all/train.ssv \
+  /work/NBB/serihiro/dataset/imagenet/256x256_all/val.ssv \
+  --mean /work/NBB/serihiro/dataset/imagenet/256x256_all/mean.npy \
+  --root /work/NBB/serihiro/dataset/imagenet/256x256_all/train \
   --local_storage_base /scr/local_storage_base \
   --arch resnet50 \
   --n_prefetch 1000 \
-  --iterator multiprocess \
+  --iterator prefetch_multiprocess \
   --prefetchjob 2 \
   --loaderjob 2 \
   --batchsize 32 \
   --val_batchsize 32 \
-  --epoch 2 \
+  --epoch 50 \
   --out ${OUT} \
   --communicator pure_nccl 2>> ${LOG_STDERR}
-  # --communicator hierarchical 2>> ${LOG_STDERR}
-  # --communicator pure_nccl 2>> ${LOG_STDERR}
 
+echo `hostname`": train_imagenet done!!!!!"
 
 if [ $MPSTAT_PROC -ne -1 ]; then
     echo `hostname`": start kill -SIGINT MPSTAT_PROC"
@@ -113,4 +84,3 @@ if [ $MPSTAT_PROC -ne -1 ]; then
     kill -TERM $VMSTAT_PROC
     echo `hostname`": finish kill -SIGINT VMSTAT_PROC"
 fi
-

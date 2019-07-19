@@ -602,6 +602,8 @@ def _generate_random_id_loop(
             try:
                 # Note: `indices` is an object of numpy.ndarray
                 _prefetch_multiprocess_iterator_waiting_id_queue.put(dataset_start + indices, timeout=_response_time)
+                # print(f'{os.uname()[1]}/{os.getpid()}:{random_id_state.current_position}/{random_id_state.epoch}', file=sys.stderr)
+                # sys.stderr.flush()
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating.is_set():
                     return
@@ -644,7 +646,10 @@ def _prefetch_from_backend(
                 os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
             else:
                 cache_hit_count += 1
-
+        
+        # print(f'{os.uname()[1]}/{os.getpid()}:{cache_hit_count}', file=sys.stderr)
+        # sys.stderr.flush()
+        
         s_queue = time.time()
         while True:
             try:
