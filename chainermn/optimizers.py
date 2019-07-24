@@ -53,8 +53,10 @@ class _MultiNodeOptimizer(object):
         target = self.target
         if lossfun is not None:
             use_cleargrads = getattr(self, '_use_cleargrads', True)
+            chainer.cuda.Stream.null.synchronize()  # timer
             start_forward = time.time()  # timer
             loss = lossfun(*args, **kwds)
+            chainer.cuda.Stream.null.synchronize()  # timer
             self._forward_total_time += time.time() - start_forward  # timer
             start_backward = time.time()  # timer
             if use_cleargrads:
@@ -63,20 +65,26 @@ class _MultiNodeOptimizer(object):
                 target.zerograds()
             loss.backward(loss_scale=self.actual_optimizer._loss_scale)
             del loss
+            chainer.cuda.Stream.null.synchronize()  # timer
             self._backward_total_time += time.time() - start_backward  # timer
 
         if self.is_changed(target):
             self._bcast_count += 1  # debug
+            chainer.cuda.Stream.null.synchronize()  # timer
             start_bcast_data = time.time()
             self.communicator.bcast_data(target)
+            chainer.cuda.Stream.null.synchronize()  # timer
             self._bcast_data_total_time += time.time() - start_bcast_data
         else:
             self._allreduce_grad_count += 1  # debug
+            chainer.cuda.Stream.null.synchronize()  # timer
             start_allreduce_grad = time.time()  # timer
             self.communicator.allreduce_grad(target)
+            chainer.cuda.Stream.null.synchronize()  # timer
             self._allreduce_grad_total_time += time.time() - start_allreduce_grad  # timer
             start_actual_optimizer_update = time.time()  # timer
             self.actual_optimizer.update(None, *args, **kwds)
+            chainer.cuda.Stream.null.synchronize()  # timer
             self._actual_optimizer_update_total_time += time.time() - start_actual_optimizer_update  # timer
 
     def is_changed(self, target):
