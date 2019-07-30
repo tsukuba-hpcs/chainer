@@ -55,6 +55,7 @@ def main():
     print('file_open_and_read_time', dataset.file_open_and_read_time, file=sys.stdout)
     print('task_time', iterator.task_time, file=sys.stdout)
     print('task_count', iterator.task_count, file=sys.stdout)
+    print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout)
     sys.stdout.flush()
     iterator.finalize()
 

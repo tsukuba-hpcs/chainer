@@ -219,6 +219,10 @@ class MultiprocessIterator(iterator.Iterator):
     def task_count(self):
         return self._prefetch_loop.task_count
 
+    @property
+    def fetch_data_time(self):
+        return self._prefetch_loop.fetch_data_time
+
     def serialize(self, serializer):
         current_position = serializer('current_position',
                                       self.current_position)
@@ -366,6 +370,7 @@ class _PrefetchLoop(object):
         self._interruption_testing = _interruption_testing
         self._task_time = 0
         self._task_count = 1
+        self._fetch_data_time = 0
 
     def terminate(self):
         self._terminating = True
@@ -401,8 +406,17 @@ class _PrefetchLoop(object):
     def task_count(self, task_count):
         self._task_count = task_count
 
+    @property
+    def fetch_data_time(self):
+        return self._fetch_data_time
+
+    @fetch_data_time.setter
+    def fetch_data_time(self, fetch_data_time):
+        self._fetch_data_time = fetch_data_time
+
     def reset_all_timers(self):
         self._task_time = 0
+        self._fetch_data_time = 0
 
     def reset_all_counts(self):
         self._task_count = 1
@@ -503,6 +517,7 @@ class _PrefetchLoop(object):
         if indices is None:  # stop iteration
             batch = None
         else:
+            fetch_data_timer = time.time()
             future = self._pool.map_async(_fetch_run, enumerate(indices))
             while True:
                 try:
@@ -512,6 +527,7 @@ class _PrefetchLoop(object):
                         return False
                 else:
                     break
+            self.fetch_data_time = self.fetch_data_time + time.time() - fetch_data_timer
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
 
         self._comm.put(batch, self.prefetch_state, reset_count)
