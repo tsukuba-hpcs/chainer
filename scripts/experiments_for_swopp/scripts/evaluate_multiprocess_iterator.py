@@ -34,7 +34,6 @@ def main():
 
     # warming up
     _data = iterator.__next__()
-    iterator.dataset.reset_all_timers()
 
     s = time.time()
     elapsed_times = []

@@ -440,6 +440,10 @@ class _PrefetchPipeline:
             batch = batch_ret[0]
             self.mem_size = max(map(_measure, batch))
             self._allocate_shared_memory()
+
+        from chainer.datasets import LabeledImageDataset
+        if isinstance(self.dataset, LabeledImageDataset) or issubclass(self.dataset, LabeledImageDataset):
+            self.dataset.reset_all_timers()
         return batch, self.prefetch_state
 
     def _allocate_shared_memory(self):
