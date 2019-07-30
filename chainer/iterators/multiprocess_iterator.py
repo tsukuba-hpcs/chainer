@@ -373,7 +373,7 @@ class _PrefetchLoop(object):
 
         self._interruption_testing = _interruption_testing
         self._task_time = 0
-        self._task_count = 1
+        self._task_count = 0
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
 
@@ -433,7 +433,7 @@ class _PrefetchLoop(object):
         self._unpack_and_organize_batch_time = 0
 
     def reset_all_counts(self):
-        self._task_count = 1
+        self._task_count = 0
 
     def measure_required(self):
         return self.mem_size is None

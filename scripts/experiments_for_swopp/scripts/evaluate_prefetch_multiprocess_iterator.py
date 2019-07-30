@@ -38,6 +38,10 @@ def main():
         n_remove_example=1
     )
 
+    # warming up
+    _data = iterator.__next__()
+    iterator.dataset.reset_all_timers()
+
     s = time.time()
     elapsed_times = []
     for i in range(args.count):
@@ -61,23 +65,14 @@ def main():
     )
     '''
     print('total', elapsed_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('get_example_time', dataset.get_example_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('file_open_and_read_time', dataset.file_open_and_read_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('task_time', iterator.task_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('task_count', iterator.task_count, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('cached_index_get_time', iterator.cached_index_get_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time, file=sys.stdout, flush=True)
-    sys.stdout.flush()
     print('prefetch_time', file=sys.stdout, flush=True)
-    sys.stdout.flush()
     prefetch_time = iterator.prefetch_time
 
     for key in prefetch_time.keys():
@@ -85,7 +80,6 @@ def main():
         print(f'[{key}] n: {times.size} sum: {times.sum()}, min: {times.min()}, '
               f'max: {times.max()}, mean: {times.mean()}, '
               f'median: {np.median(times)}, var: {times.var()}', flush=True)
-        sys.stdout.flush()
     iterator.finalize()
 
 

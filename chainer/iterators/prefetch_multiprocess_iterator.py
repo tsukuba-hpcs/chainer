@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import queue
 import shutil
+import sys
 import threading
 import time
 from multiprocessing import sharedctypes
@@ -63,6 +64,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.dataset_timeout = dataset_timeout
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
+        self.iteration = 0
 
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
         self.reset()
@@ -104,6 +106,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         if batch is None:
             raise StopIteration
         else:
+            self.iteration += 1
             return batch
 
     def finalize(self):
