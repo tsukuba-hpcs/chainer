@@ -171,6 +171,10 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     def unpack_and_organize_batch_time(self):
         return self._prefetch_pipeline.unpack_and_organize_batch_time
 
+    @property
+    def prefetch_time(self):
+        return self._prefetch_pipeline.prefetch_time
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -316,10 +320,12 @@ class _PrefetchPipeline:
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
         self._generate_batch_task_time = 0
-        self._generate_batch_task_count = 1
+        self._generate_batch_task_count = 0
         self._cached_index_get_time = 0
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
+        self._prefetch_time = {}
+        self.count = 0
 
         self._allocate_shared_memory()
 
@@ -380,14 +386,19 @@ class _PrefetchPipeline:
     def unpack_and_organize_batch_time(self, unpack_and_organize_batch_time):
         self._unpack_and_organize_batch_time = unpack_and_organize_batch_time
 
+    @property
+    def prefetch_time(self):
+        return self._prefetch_time
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_time = 0
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
+        self._prefetch_time = {}
 
     def reset_all_counts(self):
-        self._generate_batch_task_count = 1
+        self._generate_batch_task_count = 0
 
     def measure_required(self):
         return self.mem_size is None
@@ -551,7 +562,6 @@ class _PrefetchPipeline:
             task_timer = time.time()
             alive = self._generate_batch_task()
             self.generate_batch_task_time = self.generate_batch_task_time + time.time() - task_timer
-            self.generate_batch_task_count = self.generate_batch_task_count + 1
 
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
@@ -565,7 +575,6 @@ class _PrefetchPipeline:
         self.prefetch_state, _indices = iterator_statemachine(
             self.prefetch_state, self.batch_size, self.repeat,
             self.order_sampler, len(self.dataset))
-
         # if repeat == False and passed 1 epoch, `indices` will be None
         # see the implementation of `iterator_statemachine` for more detail
         if _indices is None:
@@ -574,14 +583,14 @@ class _PrefetchPipeline:
             cached_index_get_timer = time.time()
             while True:
                 try:
-                    indices = _prefetch_multiprocess_iterator_cached_id_queue.get(timeout=_response_time)
+                    indices, prefetcher_pid, prefetch_time \
+                        = _prefetch_multiprocess_iterator_cached_id_queue.get(timeout=_response_time)
                 except queue.Empty:
                     if _prefetch_multiprocess_iterator_terminating.is_set():
                         return False
                 else:
                     break
             self.cached_index_get_time = self.cached_index_get_time + time.time() - cached_index_get_timer
-
             fetch_data_timer = time.time()
             future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
             while True:
@@ -597,7 +606,12 @@ class _PrefetchPipeline:
             unpack_and_organize_batch_timer = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
             self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
-                unpack_and_organize_batch_timer
+                                                  unpack_and_organize_batch_timer
+
+            if prefetcher_pid not in self._prefetch_time.keys():
+                self._prefetch_time[prefetcher_pid] = []
+            self._prefetch_time[prefetcher_pid].append(prefetch_time)
+        self.generate_batch_task_count = self.generate_batch_task_count + 1
 
         self._comm.put(batch, self.prefetch_state, reset_count)
 
@@ -685,7 +699,9 @@ def _prefetch_from_backend(
     _prefetch_multiprocess_iterator_waiting_id_queue.cancel_join_thread()
     _prefetch_multiprocess_iterator_cached_id_queue.cancel_join_thread()
 
+    my_pid = os.getpid()
     while True:
+        prefetch_from_backend_timer = time.time()
         while not _prefetch_multiprocess_iterator_terminating.is_set():
             try:
                 indices = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
@@ -701,26 +717,25 @@ def _prefetch_from_backend(
                                                      _prefetch_multiprocess_iterator_fetch_dataset.pairs[index][0])
             local_storage_file_path = _solve_local_storage_path(_prefetch_multiprocess_iterator_local_storage_base,
                                                                 backend_storage_file_path)
-            my_pid = os.getpid()
             if not os.path.exists(local_storage_file_path):
                 os.makedirs(os.sep.join(local_storage_file_path.split(os.sep)[:-1]), exist_ok=True)
                 shutil.copyfile(backend_storage_file_path, f'{local_storage_file_path}.{my_pid}')
                 os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
             else:
                 cache_hit_count += 1
+        prefetch_from_backend_time = time.time() - prefetch_from_backend_timer
 
         while True:
             try:
-                _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time)
+                _prefetch_multiprocess_iterator_cached_id_queue.put([indices, my_pid, prefetch_from_backend_time],
+                                                                    timeout=_response_time)
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating.is_set():
                     return False
             else:
                 break
 
-
 def _generate_batch(inputs):
-    # start = time.time()
     i, index = inputs
     path, int_label = _prefetch_multiprocess_iterator_fetch_dataset.pairs[index]
     backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root, path)
