@@ -167,7 +167,10 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
                 f.close()
 
         label = numpy.array(int_label, dtype=self._label_dtype)
-        return _postprocess_image(image), label
+        if image.ndim == 2:
+            # image is greyscale
+            image = image[..., None]
+        return image.transpose(2, 0, 1), label
 
 
 class ExtendedLabeledImageDataset(LabeledImageDataset):
@@ -189,7 +192,10 @@ class ExtendedLabeledImageDataset(LabeledImageDataset):
                 f.close()
 
         label = numpy.array(int_label, dtype=self._label_dtype)
-        return _postprocess_image(image), label
+        if image.ndim == 2:
+            # image is greyscale
+            image = image[..., None]
+        return image.transpose(2, 0, 1), label
 
 
 class LabeledZippedImageDataset(dataset_mixin.DatasetMixin):
