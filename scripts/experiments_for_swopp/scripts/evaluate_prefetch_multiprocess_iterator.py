@@ -67,6 +67,7 @@ def main():
     print('task_count', iterator.task_count, file=sys.stdout)
     print('cached_index_get_time', iterator.cached_index_get_time, file=sys.stdout)
     print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout)
+    print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time, file=sys.stdout)
 
     sys.stdout.flush()
     iterator.finalize()

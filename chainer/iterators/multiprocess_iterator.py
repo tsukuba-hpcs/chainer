@@ -223,6 +223,10 @@ class MultiprocessIterator(iterator.Iterator):
     def fetch_data_time(self):
         return self._prefetch_loop.fetch_data_time
 
+    @property
+    def unpack_and_organize_batch_time(self):
+        return self._prefetch_loop.unpack_and_organize_batch_time
+
     def serialize(self, serializer):
         current_position = serializer('current_position',
                                       self.current_position)
@@ -371,6 +375,7 @@ class _PrefetchLoop(object):
         self._task_time = 0
         self._task_count = 1
         self._fetch_data_time = 0
+        self._unpack_and_organize_batch_time = 0
 
     def terminate(self):
         self._terminating = True
@@ -414,9 +419,18 @@ class _PrefetchLoop(object):
     def fetch_data_time(self, fetch_data_time):
         self._fetch_data_time = fetch_data_time
 
+    @property
+    def unpack_and_organize_batch_time(self):
+        return self._unpack_and_organize_batch_time
+
+    @unpack_and_organize_batch_time.setter
+    def unpack_and_organize_batch_time(self, unpack_and_organize_batch_time):
+        self._unpack_and_organize_batch_time = unpack_and_organize_batch_time
+
     def reset_all_timers(self):
         self._task_time = 0
         self._fetch_data_time = 0
+        self._unpack_and_organize_batch_time = 0
 
     def reset_all_counts(self):
         self._task_count = 1
@@ -528,7 +542,11 @@ class _PrefetchLoop(object):
                 else:
                     break
             self.fetch_data_time = self.fetch_data_time + time.time() - fetch_data_timer
+
+            unpack_and_organize_batch_timer = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
+            self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
+                unpack_and_organize_batch_timer
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
