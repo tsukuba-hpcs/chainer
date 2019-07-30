@@ -61,6 +61,8 @@ def main():
     )
     '''
     print('total', elapsed_time, file=sys.stdout)
+    print('get_example_time', dataset.get_example_time, file=sys.stdout)
+    print('file_open_and_read_time', dataset.file_open_and_read_time, file=sys.stdout)
 
     sys.stdout.flush()
     iterator.finalize()

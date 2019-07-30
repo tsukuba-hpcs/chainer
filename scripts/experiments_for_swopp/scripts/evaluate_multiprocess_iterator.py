@@ -1,5 +1,6 @@
 import argparse
 import multiprocessing
+import sys
 import time
 
 from chainer.datasets.image_dataset import LabeledImageDataset
@@ -49,18 +50,10 @@ def main():
     elapsed_time = time.time() - s
     # sys.stderr.write('\n')
     # print(elapsed_times)
-    print('total', elapsed_time)
-
-    '''
-    elapsed_times = np.array(elapsed_times)
-    print(
-        f'min: {elapsed_times.min()},',
-        f'max: {elapsed_times.max()},',
-        f'mean: {elapsed_times.mean()},',
-        f'median: {np.median(elapsed_times)},',
-        f'var: {elapsed_times.var()}'
-    )
-    '''
+    print('total', elapsed_time, file=sys.stdout)
+    print('get_example_time', dataset.get_example_time, file=sys.stdout)
+    print('file_open_and_read_time', dataset.file_open_and_read_time, file=sys.stdout)
+    sys.stdout.flush()
     iterator.finalize()
 
 

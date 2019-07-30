@@ -1,6 +1,7 @@
 import os
 
 import numpy
+import time
 
 try:
     from PIL import Image
@@ -150,14 +151,26 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
         self._root = root
         self._dtype = chainer.get_dtype(dtype)
         self._label_dtype = label_dtype
+        self._get_example_time = 0
+        self._file_open_and_read_time = 0
 
     def __len__(self):
         return len(self._pairs)
 
+    @property
+    def get_example_time(self):
+        return self._get_example_time
+
+    @property
+    def file_open_and_read_time(self):
+        return self._file_open_and_read_time
+
     def get_example(self, i):
+        get_example_timer = time.time()  # timer
         path, int_label = self._pairs[i]
         full_path = os.path.join(self._root, path)
 
+        file_open_and_read_timer = time.time()  # timer
         f = Image.open(full_path)
         try:
             image = numpy.asarray(f, dtype=self._dtype)
@@ -165,12 +178,15 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
             # Only pillow >= 3.0 has 'close' method
             if hasattr(f, 'close'):
                 f.close()
+        self._file_open_and_read_time += time.time() - file_open_and_read_timer  # timer
 
         label = numpy.array(int_label, dtype=self._label_dtype)
         if image.ndim == 2:
             # image is greyscale
             image = image[..., None]
-        return image.transpose(2, 0, 1), label
+        image = image.transpose(2, 0, 1)
+        self._get_example_time += time.time() - get_example_timer  # timer
+        return image, label
 
 
 class ExtendedLabeledImageDataset(LabeledImageDataset):
@@ -183,6 +199,8 @@ class ExtendedLabeledImageDataset(LabeledImageDataset):
         return self._root
 
     def get_example_by_path(self, full_path, int_label):
+        get_example_timer = time.time()  # timer
+        file_open_and_read_timer = time.time()  # timer
         f = Image.open(full_path)
         try:
             image = numpy.asarray(f, dtype=self._dtype)
@@ -190,12 +208,15 @@ class ExtendedLabeledImageDataset(LabeledImageDataset):
             # Only pillow >= 3.0 has 'close' method
             if hasattr(f, 'close'):
                 f.close()
+        self._file_open_and_read_time += time.time() - file_open_and_read_timer  # timer
 
         label = numpy.array(int_label, dtype=self._label_dtype)
         if image.ndim == 2:
             # image is greyscale
             image = image[..., None]
-        return image.transpose(2, 0, 1), label
+        image = image.transpose(2, 0, 1)
+        self._get_example_time += time.time() - get_example_timer  # timer
+        return image, label
 
 
 class LabeledZippedImageDataset(dataset_mixin.DatasetMixin):
