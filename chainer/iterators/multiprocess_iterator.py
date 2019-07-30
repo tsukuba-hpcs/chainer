@@ -1,12 +1,12 @@
 from __future__ import division
+
 import datetime
 import multiprocessing
-from multiprocessing import sharedctypes  # type: ignore
 import signal
 import sys
 import threading
 import warnings
-import time
+from multiprocessing import sharedctypes  # type: ignore
 
 import numpy
 import six
@@ -14,7 +14,6 @@ import six
 from chainer.dataset import iterator
 from chainer.iterators import _statemachine
 from chainer.iterators.order_samplers import ShuffleOrderSampler
-
 
 _response_time = 0.1
 
@@ -471,7 +470,6 @@ class _PrefetchLoop(object):
         if indices is None:  # stop iteration
             batch = None
         else:
-            start_e2e = time.time()
             future = self._pool.map_async(_fetch_run, enumerate(indices))
             while True:
                 try:
@@ -481,12 +479,7 @@ class _PrefetchLoop(object):
                         return False
                 else:
                     break
-            # print(f'self._pool.map_async: {time.time() - start_e2e}', file=sys.stderr)
-            start_unpack = time.time()
             batch = [_unpack(data, self.mem_bulk) for data in data_all]
-            # print(f'unpack: {time.time() - start_unpack}', file=sys.stderr)
-            # print(f'e2e: {time.time() - start_e2e}', file=sys.stderr)
-            sys.stderr.flush()
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
@@ -512,14 +505,12 @@ def _fetch_setup(dataset, mem_size, mem_bulk):
 
 
 def _fetch_run(inputs):
-    # start = time.time()
     i, index = inputs
     data = _fetch_dataset[index]
     if _fetch_mem_bulk is not None:
         offset = i * _fetch_mem_size
         limit = offset + _fetch_mem_size
         data = _pack(data, _fetch_mem_bulk, offset, limit)
-    # print(f'{time.time() - start}', file=sys.stderr)
     return data
 
 
