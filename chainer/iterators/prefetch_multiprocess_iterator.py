@@ -152,6 +152,14 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
             epoch_size = len(order)
         return epoch_size
 
+    @property
+    def task_time(self):
+        return self._prefetch_pipeline.generate_batch_task_time
+
+    @property
+    def task_count(self):
+        return self._prefetch_pipeline.generate_batch_task_count
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -296,6 +304,8 @@ class _PrefetchPipeline:
 
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
+        self._generate_batch_task_time = 0
+        self._generate_batch_task_count = 1
 
         self._allocate_shared_memory()
 
@@ -315,6 +325,28 @@ class _PrefetchPipeline:
     @property
     def launched(self):
         return self._launched
+
+    @property
+    def generate_batch_task_time(self):
+        return self._generate_batch_task_time
+
+    @generate_batch_task_time.setter
+    def generate_batch_task_time(self, task_time):
+        self._generate_batch_task_time = task_time
+
+    @property
+    def generate_batch_task_count(self):
+        return self._generate_batch_task_count
+
+    @generate_batch_task_count.setter
+    def generate_batch_task_count(self, task_count):
+        self._generate_batch_task_count = task_count
+
+    def reset_all_timers(self):
+        self._generate_batch_task_time = 0
+
+    def reset_all_counts(self):
+        self._generate_batch_task_count = 1
 
     def measure_required(self):
         return self.mem_size is None
@@ -489,7 +521,10 @@ class _PrefetchPipeline:
         while alive:
             if _prefetch_multiprocess_iterator_terminating.is_set():
                 break
+            task_timer = time.time()
             alive = self._generate_batch_task()
+            self.generate_batch_task_time = self.generate_batch_task_time + time.time() - task_timer
+            self.generate_batch_task_count = self.generate_batch_task_count + 1
         
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()

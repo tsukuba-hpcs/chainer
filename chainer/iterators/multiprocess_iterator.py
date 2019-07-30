@@ -5,6 +5,7 @@ import multiprocessing
 import signal
 import sys
 import threading
+import time
 import warnings
 from multiprocessing import sharedctypes  # type: ignore
 
@@ -29,7 +30,6 @@ def _raise_timeout_warning():
 
 
 class MultiprocessIterator(iterator.Iterator):
-
     """Dataset iterator that loads examples in parallel.
 
     This is an implementation of :class:`~chainer.dataset.Iterator` that loads
@@ -211,6 +211,14 @@ class MultiprocessIterator(iterator.Iterator):
             return None
         return self._previous_epoch_detail
 
+    @property
+    def task_time(self):
+        return self._prefetch_loop.task_time
+
+    @property
+    def task_count(self):
+        return self._prefetch_loop.task_count
+
     def serialize(self, serializer):
         current_position = serializer('current_position',
                                       self.current_position)
@@ -228,7 +236,7 @@ class MultiprocessIterator(iterator.Iterator):
         except KeyError:
             # guess previous_epoch_detail for older version
             self._previous_epoch_detail = self.epoch + \
-                (self.current_position - self.batch_size) / self._epoch_size
+                                          (self.current_position - self.batch_size) / self._epoch_size
             if self.epoch_detail > 0:
                 self._previous_epoch_detail = max(
                     self._previous_epoch_detail, 0.)
@@ -263,7 +271,6 @@ class MultiprocessIterator(iterator.Iterator):
 
 
 class _Communicator(object):
-
     STATUS_CONTINUE = 0
     STATUS_RESET = 1
     STATUS_TERMINATE = 2
@@ -337,7 +344,6 @@ class _Communicator(object):
 
 
 class _PrefetchLoop(object):
-
     _thread = None
     _pool = None
     _terminating = False
@@ -358,6 +364,8 @@ class _PrefetchLoop(object):
         self._allocate_shared_memory()
 
         self._interruption_testing = _interruption_testing
+        self._task_time = 0
+        self._task_count = 1
 
     def terminate(self):
         self._terminating = True
@@ -376,6 +384,28 @@ class _PrefetchLoop(object):
     @property
     def thread(self):
         return self._thread
+
+    @property
+    def task_time(self):
+        return self._task_time
+
+    @task_time.setter
+    def task_time(self, task_time):
+        self._task_time = task_time
+
+    @property
+    def task_count(self):
+        return self._task_count
+
+    @task_count.setter
+    def task_count(self, task_count):
+        self._task_count = task_count
+
+    def reset_all_timers(self):
+        self._task_time = 0
+
+    def reset_all_counts(self):
+        self._task_count = 1
 
     def measure_required(self):
         return self.mem_size is None
@@ -449,7 +479,10 @@ class _PrefetchLoop(object):
             while alive:
                 if self._terminating:
                     break
+                task_timer = time.time()
                 alive = self._task()
+                self.task_time = self.task_time + time.time() - task_timer
+                self.task_count = self.task_count + 1
         finally:
             self._pool.close()
             self._pool.join()

@@ -165,6 +165,10 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
     def file_open_and_read_time(self):
         return self._file_open_and_read_time
 
+    def reset_all_timers(self):
+        self._get_example_time = 0
+        self._file_open_and_read_time = 0
+
     def get_example(self, i):
         get_example_timer = time.time()  # timer
         path, int_label = self._pairs[i]
