@@ -1,6 +1,5 @@
 import multiprocessing
 import os
-import sys
 import queue
 import shutil
 import threading
@@ -64,7 +63,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.dataset_timeout = dataset_timeout
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
-        
+
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
         self.reset()
 
@@ -502,20 +501,6 @@ class _PrefetchPipeline:
             process.start()
             self._prefetch_from_backend_pool.append(process)
 
-    def _prefetch_from_backend_task(self):
-        future = self._prefetch_from_backend_pool.map_async(_prefetch_from_backend,
-                                                            list(range(self.n_prefetch_from_backend)))
-        while True:
-            try:
-                _ = future.get(timeout=_response_time)
-            except multiprocessing.TimeoutError:
-                if _prefetch_multiprocess_iterator_terminating.is_set():
-                    return False
-            else:
-                break
-
-        return False
-
     def _generate_batch_loop(self):
         alive = True
         while alive:
@@ -525,7 +510,7 @@ class _PrefetchPipeline:
             alive = self._generate_batch_task()
             self.generate_batch_task_time = self.generate_batch_task_time + time.time() - task_timer
             self.generate_batch_task_count = self.generate_batch_task_count + 1
-        
+
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
 
@@ -544,8 +529,6 @@ class _PrefetchPipeline:
         if _indices is None:
             batch = None
         else:
-            indices = []
-            start = time.time()
             while True:
                 try:
                     indices = _prefetch_multiprocess_iterator_cached_id_queue.get(timeout=_response_time)
@@ -555,7 +538,6 @@ class _PrefetchPipeline:
                 else:
                     break
 
-            start = time.time()
             future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
             while True:
                 try:
@@ -637,8 +619,6 @@ def _generate_random_id_loop(
             try:
                 # Note: `indices` is an object of numpy.ndarray
                 _prefetch_multiprocess_iterator_waiting_id_queue.put(dataset_start + indices, timeout=_response_time)
-                # print(f'{os.uname()[1]}/{os.getpid()}:{random_id_state.current_position}/{random_id_state.epoch}', file=sys.stderr)
-                # sys.stderr.flush()
             except queue.Full:
                 if _prefetch_multiprocess_iterator_terminating.is_set():
                     return
@@ -657,7 +637,6 @@ def _prefetch_from_backend(
     _prefetch_multiprocess_iterator_cached_id_queue.cancel_join_thread()
 
     while True:
-        start = time.time()
         while not _prefetch_multiprocess_iterator_terminating.is_set():
             try:
                 indices = _prefetch_multiprocess_iterator_waiting_id_queue.get(timeout=_response_time)
@@ -667,7 +646,6 @@ def _prefetch_from_backend(
             else:
                 break
 
-        batch_size = len(indices)
         cache_hit_count = 0
         for index in indices:
             backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root,
@@ -681,11 +659,7 @@ def _prefetch_from_backend(
                 os.rename(f'{local_storage_file_path}.{my_pid}', local_storage_file_path)
             else:
                 cache_hit_count += 1
-        
-        # print(f'{os.uname()[1]}/{os.getpid()}:{cache_hit_count}', file=sys.stderr)
-        # sys.stderr.flush()
-        
-        s_queue = time.time()
+
         while True:
             try:
                 _prefetch_multiprocess_iterator_cached_id_queue.put(indices, timeout=_response_time)
