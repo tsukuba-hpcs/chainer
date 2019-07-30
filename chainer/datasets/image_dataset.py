@@ -157,7 +157,14 @@ class LabeledImageDataset(dataset_mixin.DatasetMixin):
     def get_example(self, i):
         path, int_label = self._pairs[i]
         full_path = os.path.join(self._root, path)
-        image = _read_image_as_array(full_path, self._dtype)
+
+        f = Image.open(full_path)
+        try:
+            image = numpy.asarray(f, dtype=self._dtype)
+        finally:
+            # Only pillow >= 3.0 has 'close' method
+            if hasattr(f, 'close'):
+                f.close()
 
         label = numpy.array(int_label, dtype=self._label_dtype)
         return _postprocess_image(image), label
@@ -173,7 +180,13 @@ class ExtendedLabeledImageDataset(LabeledImageDataset):
         return self._root
 
     def get_example_by_path(self, full_path, int_label):
-        image = _read_image_as_array(full_path, self._dtype)
+        f = Image.open(full_path)
+        try:
+            image = numpy.asarray(f, dtype=self._dtype)
+        finally:
+            # Only pillow >= 3.0 has 'close' method
+            if hasattr(f, 'close'):
+                f.close()
 
         label = numpy.array(int_label, dtype=self._label_dtype)
         return _postprocess_image(image), label

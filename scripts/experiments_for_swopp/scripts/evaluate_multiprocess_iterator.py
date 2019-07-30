@@ -1,12 +1,9 @@
 import argparse
-import time
-import sys
-import chainer
-import numpy as np
 import multiprocessing
+import time
 
-from chainer.iterators.multiprocess_iterator import MultiprocessIterator
 from chainer.datasets.image_dataset import LabeledImageDataset
+from chainer.iterators.multiprocess_iterator import MultiprocessIterator
 
 
 def main():
@@ -40,7 +37,7 @@ def main():
         s_iteration = time.time()
         # sys.stderr.write(f'{i}/{args.count}\r')
         # sys.stderr.flush()
-        data = iterator.__next__()
+        _data = iterator.__next__()
         iteration_elapsed_time = time.time() - s_iteration
         elapsed_times.append(iteration_elapsed_time)
         '''
@@ -51,7 +48,7 @@ def main():
         '''
     elapsed_time = time.time() - s
     # sys.stderr.write('\n')
-    print(elapsed_times)
+    # print(elapsed_times)
     print('total', elapsed_time)
 
     '''
@@ -66,6 +63,6 @@ def main():
     '''
     iterator.finalize()
 
+
 if __name__ == '__main__':
     main()
-

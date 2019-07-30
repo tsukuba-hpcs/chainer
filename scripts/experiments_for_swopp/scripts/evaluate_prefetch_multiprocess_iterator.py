@@ -1,11 +1,10 @@
 import argparse
-import time
-import sys
-import chainer
-import numpy as np
 import multiprocessing
+import sys
+import time
 
-from chainer.datasets.image_dataset import LabeledImageDataset
+import numpy as np
+
 from chainer.datasets.image_dataset import ExtendedLabeledImageDataset
 from chainer.iterators.prefetch_multiprocess_iterator import PrefetchMultiprocessIterator
 
@@ -22,7 +21,6 @@ def main():
     parser.add_argument('--n_prefetch', type=int, required=True)
     parser.add_argument('--n_prefetch_from_backend', type=int, required=True)
     parser.add_argument('--n_generate_batch', type=int, required=True)
-    parser.add_argument('--n_remove_example', type=int, required=True)
 
     args = parser.parse_args()
     dataset = ExtendedLabeledImageDataset(
@@ -37,7 +35,7 @@ def main():
         n_prefetch=args.n_prefetch,
         n_prefetch_from_backend=args.n_prefetch_from_backend,
         n_generate_batch=args.n_generate_batch,
-        n_remove_example=args.n_remove_example
+        n_remove_example=1
     )
 
     s = time.time()
@@ -46,15 +44,10 @@ def main():
         s_iteration = time.time()
         # sys.stderr.write(f'{i}/{args.count}\r')
         # sys.stderr.flush()
-        data = iterator.__next__()
+        _data = iterator.__next__()
         iteration_elapsed_time = time.time() - s_iteration
         elapsed_times.append(iteration_elapsed_time)
-        '''
-        print(
-	    f'current: {i}, first img label in batch: {data[0][1]}',
-            file=sys.stderr
-        )
-        '''
+
     elapsed_time = time.time() - s
     # sys.stderr.write('\n')
     elapsed_times = np.array(elapsed_times)
@@ -67,13 +60,11 @@ def main():
         f'var: {elapsed_times.var()}'
     )
     '''
-    print(elapsed_times)
-
     print('total', elapsed_time, file=sys.stdout)
-    
+
     sys.stdout.flush()
     iterator.finalize()
 
+
 if __name__ == '__main__':
     main()
-
