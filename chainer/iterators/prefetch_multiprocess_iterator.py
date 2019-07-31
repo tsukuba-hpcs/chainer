@@ -2,7 +2,6 @@ import multiprocessing
 import os
 import queue
 import shutil
-import sys
 import threading
 import time
 from multiprocessing import sharedctypes
@@ -47,7 +46,8 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
                  prefetched_id_queue_max_size=1000,
                  used_id_queue_max_size=1000,
                  dataset_start=0,
-                 dataset_finish=0
+                 dataset_finish=0,
+                 measure=False
                  ):
 
         self.dataset = dataset  # support only ExtendedLabeledImageDataset
@@ -64,6 +64,7 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         self.dataset_timeout = dataset_timeout
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
+        self._measure = measure
         self.iteration = 0
 
         self._comm = _Communicator(self.n_prefetch, dataset_timeout)
@@ -85,7 +86,8 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
             prefetched_id_queue_max_size,
             used_id_queue_max_size,
             dataset_start,
-            dataset_finish
+            dataset_finish,
+            self._measure
         )
 
     def __next__(self):
@@ -177,6 +179,18 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     @property
     def prefetch_time(self):
         return self._prefetch_pipeline.prefetch_time
+
+    @property
+    def generate_batch_times(self):
+        return self._prefetch_pipeline.generate_batch_times
+
+    @property
+    def get_example_times(self):
+        return self._prefetch_pipeline.get_example_times
+
+    @property
+    def read_data_times(self):
+        return self._prefetch_pipeline.read_data_times
 
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
@@ -301,7 +315,8 @@ class _PrefetchPipeline:
                  prefetched_id_queue_max_size,
                  used_id_queue_max_size,
                  dataset_start=0,
-                 dataset_finish=0
+                 dataset_finish=0,
+                 measure=False
                  ):
 
         self.dataset = dataset
@@ -319,6 +334,7 @@ class _PrefetchPipeline:
         self.order_sampler = order_sampler
         self.repeat = repeat
         self.prefetch_batch_size = prefetch_batch_size
+        self._measure = measure
 
         self.dataset_start = dataset_start
         self.dataset_finish = dataset_finish
@@ -329,6 +345,9 @@ class _PrefetchPipeline:
         self._unpack_and_organize_batch_time = 0
         self._prefetch_time = {}
         self.count = 0
+        self._generate_batch_times = []
+        self._get_example_times = []
+        self._read_data_times = []
 
         self._allocate_shared_memory()
 
@@ -393,12 +412,27 @@ class _PrefetchPipeline:
     def prefetch_time(self):
         return self._prefetch_time
 
+    @property
+    def generate_batch_times(self):
+        return self._generate_batch_times
+
+    @property
+    def get_example_times(self):
+        return self._get_example_times
+
+    @property
+    def read_data_times(self):
+        return self._read_data_times
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_time = 0
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
         self._prefetch_time = {}
+        self._generate_batch_times = {}
+        self._get_example_times = {}
+        self._read_data_times = {}
 
     def reset_all_counts(self):
         self._generate_batch_task_count = 0
@@ -441,9 +475,6 @@ class _PrefetchPipeline:
             self.mem_size = max(map(_measure, batch))
             self._allocate_shared_memory()
 
-        from chainer.datasets import LabeledImageDataset
-        if isinstance(self.dataset, LabeledImageDataset) or issubclass(self.dataset, LabeledImageDataset):
-            self.dataset.reset_all_timers()
         return batch, self.prefetch_state
 
     def _allocate_shared_memory(self):
@@ -615,9 +646,16 @@ class _PrefetchPipeline:
             self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
                                                   unpack_and_organize_batch_timer
 
-            if prefetcher_pid not in self._prefetch_time.keys():
-                self._prefetch_time[prefetcher_pid] = []
-            self._prefetch_time[prefetcher_pid].append(prefetch_time)
+            if self._measure:
+                for data in data_all:
+                    self._generate_batch_times.append(data[1])
+                    self._read_data_times.append(data[0][2])
+                    self._get_example_times.append(data[0][3])
+
+                if prefetcher_pid not in self._prefetch_time.keys():
+                    self._prefetch_time[prefetcher_pid] = []
+                self._prefetch_time[prefetcher_pid].append(prefetch_time)
+
         self.generate_batch_task_count = self.generate_batch_task_count + 1
 
         self._comm.put(batch, self.prefetch_state, reset_count)
@@ -742,7 +780,9 @@ def _prefetch_from_backend(
             else:
                 break
 
+
 def _generate_batch(inputs):
+    generate_batch_timer = time.time()
     i, index = inputs
     path, int_label = _prefetch_multiprocess_iterator_fetch_dataset.pairs[index]
     backend_storage_file_path = os.path.join(_prefetch_multiprocess_iterator_fetch_dataset.root, path)
@@ -765,7 +805,8 @@ def _generate_batch(inputs):
         limit = offset + _prefetch_multiprocess_iterator_mem_size
         data = _pack(data, _prefetch_multiprocess_iterator_mem_bulk, offset, limit)
 
-    return data
+    generate_batch_time = time.time() - generate_batch_timer
+    return data, generate_batch_time
 
 
 def _remove_example_loop(

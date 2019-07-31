@@ -104,7 +104,7 @@ class MultiprocessIterator(iterator.Iterator):
     def __init__(self, dataset, batch_size, repeat=True, shuffle=None,
                  n_processes=None, n_prefetch=1, shared_mem=None,
                  order_sampler=None, dataset_timeout=30.0,
-                 maxtasksperchild=None):
+                 maxtasksperchild=None, measure=False):
         self.dataset = dataset
         self.batch_size = batch_size
         self.repeat = repeat
@@ -114,6 +114,7 @@ class MultiprocessIterator(iterator.Iterator):
         self.shared_mem = shared_mem
         self.dataset_timeout = dataset_timeout
         self._maxtasksperchild = maxtasksperchild
+        self._measure = measure
 
         if self.shuffle is not None:
             if order_sampler is not None:
@@ -136,7 +137,7 @@ class MultiprocessIterator(iterator.Iterator):
             self.dataset, self.batch_size, self.repeat,
             self.n_processes, self.n_prefetch, self.shared_mem,
             self._comm, self.order_sampler,
-            self._interruption_testing, self._maxtasksperchild)
+            self._interruption_testing, self._maxtasksperchild, self._measure)
         # defer launching prefetch thread until creating the worker pool,
         # not to leave a background thread in forked processes.
 
@@ -226,6 +227,18 @@ class MultiprocessIterator(iterator.Iterator):
     @property
     def unpack_and_organize_batch_time(self):
         return self._prefetch_loop.unpack_and_organize_batch_time
+
+    @property
+    def fetch_run_times(self):
+        return self._prefetch_loop.fetch_run_times
+
+    @property
+    def get_example_times(self):
+        return self._prefetch_loop.get_example_times
+
+    @property
+    def read_data_times(self):
+        return self._prefetch_loop.read_data_times
 
     def serialize(self, serializer):
         current_position = serializer('current_position',
@@ -359,7 +372,7 @@ class _PrefetchLoop(object):
     def __init__(self, dataset, batch_size, repeat,
                  n_processes, n_prefetch, mem_size, comm,
                  order_sampler,
-                 _interruption_testing, maxtasksperchild):
+                 _interruption_testing, maxtasksperchild, measure=False):
         self.dataset = dataset
         self.batch_size = batch_size
         self.repeat = repeat
@@ -368,6 +381,7 @@ class _PrefetchLoop(object):
         self._comm = comm
         self.order_sampler = order_sampler
         self.maxtasksperchild = maxtasksperchild
+        self._measure = measure
 
         self._allocate_shared_memory()
 
@@ -376,6 +390,9 @@ class _PrefetchLoop(object):
         self._task_count = 0
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
+        self._fetch_run_times = []
+        self._get_example_times = []
+        self._read_data_times = []
 
     def terminate(self):
         self._terminating = True
@@ -427,6 +444,18 @@ class _PrefetchLoop(object):
     def unpack_and_organize_batch_time(self, unpack_and_organize_batch_time):
         self._unpack_and_organize_batch_time = unpack_and_organize_batch_time
 
+    @property
+    def fetch_run_times(self):
+        return self._fetch_run_times
+
+    @property
+    def get_example_times(self):
+        return self._get_example_times
+
+    @property
+    def read_data_times(self):
+        return self._read_data_times
+
     def reset_all_timers(self):
         self._task_time = 0
         self._fetch_data_time = 0
@@ -472,11 +501,6 @@ class _PrefetchLoop(object):
             batch = batch_ret[0]
             self.mem_size = max(map(_measure, batch))
             self._allocate_shared_memory()
-
-        from chainer.datasets import LabeledImageDataset
-
-        if isinstance(self.dataset, LabeledImageDataset) or issubclass(self.dataset, LabeledImageDataset):
-            self.dataset.reset_all_timers()
 
         return batch, self.prefetch_state
 
@@ -549,9 +573,15 @@ class _PrefetchLoop(object):
             self.fetch_data_time = self.fetch_data_time + time.time() - fetch_data_timer
 
             unpack_and_organize_batch_timer = time.time()
-            batch = [_unpack(data, self.mem_bulk) for data in data_all]
+            batch = [_unpack(data[0], self.mem_bulk) for data in data_all]
+            if self._measure:
+                for data in data_all:
+                    self._fetch_run_times.append(data[1])
+                    self._read_data_times.append(data[0][2])
+                    self._get_example_times.append(data[0][3])
+
             self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
-                unpack_and_organize_batch_timer
+                                                  unpack_and_organize_batch_timer
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
@@ -577,13 +607,15 @@ def _fetch_setup(dataset, mem_size, mem_bulk):
 
 
 def _fetch_run(inputs):
+    fetch_run_timer = time.time()
     i, index = inputs
     data = _fetch_dataset[index]
     if _fetch_mem_bulk is not None:
         offset = i * _fetch_mem_size
         limit = offset + _fetch_mem_size
         data = _pack(data, _fetch_mem_bulk, offset, limit)
-    return data
+        fetch_run_time = time.time() - fetch_run_timer
+    return data, fetch_run_time
 
 
 def _report_pid(_):  # for testing

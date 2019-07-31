@@ -9,6 +9,13 @@ from chainer.datasets.image_dataset import ExtendedLabeledImageDataset
 from chainer.iterators.prefetch_multiprocess_iterator import PrefetchMultiprocessIterator
 
 
+def desc(data: np.ndarray):
+    print(f'n: {data.size}, sum: {data.sum()},'
+          f'min: {data.min()}, max: {data.max()},'
+          f'mean: {data.mean()}, median: {np.median(data)},'
+          f'var: {data.var()}')
+
+
 def main():
     multiprocessing.set_start_method('forkserver')
 
@@ -25,7 +32,8 @@ def main():
     args = parser.parse_args()
     dataset = ExtendedLabeledImageDataset(
         pairs=args.train,
-        root=args.root
+        root=args.root,
+        measure=True
     )
 
     iterator = PrefetchMultiprocessIterator(
@@ -35,7 +43,8 @@ def main():
         n_prefetch=args.n_prefetch,
         n_prefetch_from_backend=args.n_prefetch_from_backend,
         n_generate_batch=args.n_generate_batch,
-        n_remove_example=1
+        n_remove_example=1,
+        measure=True
     )
 
     # warming up
@@ -64,21 +73,31 @@ def main():
     )
     '''
     print('total', elapsed_time, file=sys.stdout, flush=True)
-    print('get_example_time', dataset.get_example_time, file=sys.stdout, flush=True)
-    print('file_open_and_read_time', dataset.file_open_and_read_time, file=sys.stdout, flush=True)
     print('task_time', iterator.task_time, file=sys.stdout, flush=True)
     print('task_count', iterator.task_count, file=sys.stdout, flush=True)
     print('cached_index_get_time', iterator.cached_index_get_time, file=sys.stdout, flush=True)
     print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout, flush=True)
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time, file=sys.stdout, flush=True)
     print('prefetch_time', file=sys.stdout, flush=True)
-    prefetch_time = iterator.prefetch_time
 
+    generate_batch_times = np.array(iterator.generate_batch_times)
+    get_example_times = np.array(iterator.get_example_times)
+    read_data_times = np.array(iterator.read_data_times)
+
+    print('generate_batch_times')
+    desc(generate_batch_times)
+    print('get_example_times')
+    desc(get_example_times)
+    print('read_data_times')
+    desc(read_data_times)
+
+    prefetch_time = iterator.prefetch_time
+    print('prefetch_time')
     for key in prefetch_time.keys():
         times = np.array(prefetch_time[key])
-        print(f'[{key}] n: {times.size} sum: {times.sum()}, min: {times.min()}, '
-              f'max: {times.max()}, mean: {times.mean()}, '
-              f'median: {np.median(times)}, var: {times.var()}', flush=True)
+        print(f'[{key}]')
+        desc(times)
+
     iterator.finalize()
 
 
