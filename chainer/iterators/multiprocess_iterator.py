@@ -574,14 +574,14 @@ class _PrefetchLoop(object):
 
             unpack_and_organize_batch_timer = time.time()
             batch = [_unpack(data[0], self.mem_bulk) for data in data_all]
+            self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
+                                                  unpack_and_organize_batch_timer
+
             if self._measure:
                 for data in data_all:
                     self._fetch_run_times.append(data[1])
                     self._read_data_times.append(data[0][2])
                     self._get_example_times.append(data[0][3])
-
-            self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
-                                                  unpack_and_organize_batch_timer
 
         self._comm.put(batch, self.prefetch_state, reset_count)
         return True
