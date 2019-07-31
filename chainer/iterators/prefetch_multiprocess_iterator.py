@@ -165,8 +165,8 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
         return self._prefetch_pipeline.generate_batch_task_count
 
     @property
-    def cached_index_get_time(self):
-        return self._prefetch_pipeline.cached_index_get_time
+    def cached_index_get_times(self):
+        return self._prefetch_pipeline.cached_index_get_times
 
     @property
     def fetch_data_time(self):
@@ -340,7 +340,7 @@ class _PrefetchPipeline:
         self.dataset_finish = dataset_finish
         self._generate_batch_task_time = 0
         self._generate_batch_task_count = 0
-        self._cached_index_get_time = 0
+        self._cached_index_get_times = []
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
         self._prefetch_time = {}
@@ -385,12 +385,8 @@ class _PrefetchPipeline:
         self._generate_batch_task_count = task_count
 
     @property
-    def cached_index_get_time(self):
-        return self._cached_index_get_time
-
-    @cached_index_get_time.setter
-    def cached_index_get_time(self, cached_index_get_time):
-        self._cached_index_get_time = cached_index_get_time
+    def cached_index_get_times(self):
+        return self._cached_index_get_times
 
     @property
     def fetch_data_time(self):
@@ -426,7 +422,7 @@ class _PrefetchPipeline:
 
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
-        self._cached_index_get_time = 0
+        self._cached_index_get_times = []
         self._fetch_data_time = 0
         self._unpack_and_organize_batch_time = 0
         self._prefetch_time = {}
@@ -600,6 +596,7 @@ class _PrefetchPipeline:
             task_timer = time.time()
             alive = self._generate_batch_task()
             self.generate_batch_task_time = self.generate_batch_task_time + time.time() - task_timer
+            self.generate_batch_task_count = self.generate_batch_task_count + 1
 
     def _generate_batch_task(self):
         status, prefetch_state, reset_count = self._comm.check()
@@ -628,7 +625,8 @@ class _PrefetchPipeline:
                         return False
                 else:
                     break
-            self.cached_index_get_time = self.cached_index_get_time + time.time() - cached_index_get_timer
+            cached_index_get_time = time.time() - cached_index_get_timer
+            self.cached_index_get_times.append(cached_index_get_time)
             fetch_data_timer = time.time()
             future = self._generate_batch_pool.map_async(_generate_batch, enumerate(indices))
             while True:
@@ -655,8 +653,6 @@ class _PrefetchPipeline:
                 if prefetcher_pid not in self._prefetch_time.keys():
                     self._prefetch_time[prefetcher_pid] = []
                 self._prefetch_time[prefetcher_pid].append(prefetch_time)
-
-        self.generate_batch_task_count = self.generate_batch_task_count + 1
 
         self._comm.put(batch, self.prefetch_state, reset_count)
 

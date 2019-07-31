@@ -64,11 +64,11 @@ def main():
     elapsed_time = time.time() - s
     # sys.stderr.write('\n')
     # print(elapsed_times)
-    print('total', elapsed_time, file=sys.stdout)
-    print('task_time', iterator.task_time, file=sys.stdout)
-    print('task_count', iterator.task_count, file=sys.stdout)
-    print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout)
-    print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time, file=sys.stdout)
+    print('total', elapsed_time)
+    print('task_time', iterator.task_time)
+    print('task_count', iterator.task_count)
+    print('fetch_data_time', iterator.fetch_data_time)
+    print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
 
     fetch_run_times = np.array(iterator.fetch_run_times)
     get_example_times = np.array(iterator.get_example_times)

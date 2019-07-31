@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 import sys
 import time
+import pprint
 
 import numpy as np
 
@@ -72,18 +73,22 @@ def main():
         f'var: {elapsed_times.var()}'
     )
     '''
-    print('total', elapsed_time, file=sys.stdout, flush=True)
-    print('task_time', iterator.task_time, file=sys.stdout, flush=True)
-    print('task_count', iterator.task_count, file=sys.stdout, flush=True)
-    print('cached_index_get_time', iterator.cached_index_get_time, file=sys.stdout, flush=True)
-    print('fetch_data_time', iterator.fetch_data_time, file=sys.stdout, flush=True)
-    print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time, file=sys.stdout, flush=True)
-    print('prefetch_time', file=sys.stdout, flush=True)
+
+    print(f'total {elapsed_time}')
+    print('task_time', iterator.task_time)
+    print('task_count', iterator.task_count)
+    print('cached_index_get_times')
+    cached_index_get_times = np.array(iterator.cached_index_get_times)
+    desc(cached_index_get_times)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(cached_index_get_times.tolist())
+    print('fetch_data_time', iterator.fetch_data_time)
+    print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
+    print('prefetch_time')
 
     generate_batch_times = np.array(iterator.generate_batch_times)
     get_example_times = np.array(iterator.get_example_times)
     read_data_times = np.array(iterator.read_data_times)
-
     print('generate_batch_times')
     desc(generate_batch_times)
     print('get_example_times')
@@ -98,6 +103,7 @@ def main():
         print(f'[{key}]')
         desc(times)
 
+    sys.stdout.flush()
     iterator.finalize()
 
 
