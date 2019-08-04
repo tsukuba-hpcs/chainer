@@ -196,6 +196,14 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     def start_prefetch_process_times(self):
         return self._prefetch_pipeline.start_prefetch_process_times
 
+    @property
+    def generate_batch_pool_time(self):
+        return self._prefetch_pipeline.generate_batch_pool_time
+
+    @property
+    def generate_batch_thread_and_start_time(self):
+        return self._prefetch_pipeline.generate_batch_thread_and_start_time
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -353,6 +361,8 @@ class _PrefetchPipeline:
         self._get_example_times = []
         self._read_data_times = []
         self._start_prefetch_process_times = []
+        self._generate_batch_pool_time = 0
+        self._generate_batch_thread_and_start_time = 0
 
         self._allocate_shared_memory()
 
@@ -429,6 +439,14 @@ class _PrefetchPipeline:
     def start_prefetch_process_times(self):
         return self._start_prefetch_process_times
 
+    @property
+    def generate_batch_pool_time(self):
+        return self._generate_batch_pool_time
+
+    @property
+    def generate_batch_thread_and_start_time(self):
+        return self._generate_batch_thread_and_start_time
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_times = []
@@ -439,6 +457,8 @@ class _PrefetchPipeline:
         self._get_example_times = {}
         self._read_data_times = {}
         self._start_prefetch_process_times = []
+        self._generate_batch_pool_time = 0
+        self._generate_batch_thread_and_start_time = 0
 
     def reset_all_counts(self):
         self._generate_batch_task_count = 0
@@ -515,6 +535,7 @@ class _PrefetchPipeline:
         self._prefetch_from_backend_pool = []
         self._prefetch_from_backend_loop()
 
+        generate_batch_pool_timer = time.time()  # timer
         self._generate_batch_pool = multiprocessing.Pool(
             processes=self.n_generate_batch,
             initializer=_fetch_setup,
@@ -525,12 +546,15 @@ class _PrefetchPipeline:
                 _prefetch_multiprocess_iterator_local_storage_base
             )
         )
+        self._generate_batch_pool_time = time.time() - generate_batch_pool_timer
+        generate_batch_thread_and_start_timer = time.time()  # timer
         self._generate_batch_thread = threading.Thread(
             target=self._generate_batch_loop,
             name='_generate_batch_loop'
         )
         self._generate_batch_thread.daemon = True
         self._generate_batch_thread.start()
+        self._generate_batch_thread_and_start_time = time.time() - generate_batch_thread_and_start_timer  # timer
 
         '''
         self._remove_example_process = multiprocessing.Process(

@@ -1,8 +1,8 @@
 import argparse
 import multiprocessing
+import pprint
 import sys
 import time
-import pprint
 
 import numpy as np
 
@@ -85,7 +85,8 @@ def main():
     pp.pprint(cached_index_get_times.tolist())
     print('fetch_data_time', iterator.fetch_data_time)
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
-    print('prefetch_time')
+    print('generate_batch_pool_time', iterator.generate_batch_pool_time)
+    print('generate_batch_thread_and_start_time', iterator.generate_batch_thread_and_start_time)
 
     generate_batch_times = np.array(iterator.generate_batch_times)
     get_example_times = np.array(iterator.get_example_times)
