@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import queue
 import shutil
+import sys
 import threading
 import time
 from multiprocessing import sharedctypes
@@ -212,6 +213,10 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     def start_generate_random_id_process_time(self):
         return self._prefetch_pipeline.start_generate_random_id_process_time
 
+    @property
+    def initial_prefetch_multiprocess_iterator_cached_id_queue_size(self):
+        return self._prefetch_pipeline.initial_prefetch_multiprocess_iterator_cached_id_queue_size
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -373,6 +378,7 @@ class _PrefetchPipeline:
         self._generate_batch_thread_and_start_time = 0
         self._launch_thread_time = 0
         self._start_generate_random_id_process_time = 0
+        self._initial_prefetch_multiprocess_iterator_cached_id_queue_size = 0
 
         self._allocate_shared_memory()
 
@@ -465,6 +471,10 @@ class _PrefetchPipeline:
     def start_generate_random_id_process_time(self):
         return self._start_generate_random_id_process_time
 
+    @property
+    def initial_prefetch_multiprocess_iterator_cached_id_queue_size(self):
+        return self._initial_prefetch_multiprocess_iterator_cached_id_queue_size
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_times = []
@@ -482,6 +492,7 @@ class _PrefetchPipeline:
 
     def reset_all_counts(self):
         self._generate_batch_task_count = 0
+        self._initial_prefetch_multiprocess_iterator_cached_id_queue_size = 0
 
     def measure_required(self):
         return self.mem_size is None
@@ -652,6 +663,13 @@ class _PrefetchPipeline:
 
     def _generate_batch_loop(self):
         alive = True
+        try:
+            self._initial_prefetch_multiprocess_iterator_cached_id_queue_size = \
+                _prefetch_multiprocess_iterator_cached_id_queue.qsize()
+        except NotImplementedError:
+            print('WARNING:  _prefetch_multiprocess_iterator_cached_id_queue.qsize() raise NotImplementedError',
+                  file=sys.stderr)
+
         while alive:
             if _prefetch_multiprocess_iterator_terminating.is_set():
                 break

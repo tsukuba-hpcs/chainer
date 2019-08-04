@@ -85,6 +85,8 @@ def main():
     pp.pprint(cached_index_get_times.tolist())
     print('fetch_data_time', iterator.fetch_data_time)
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
+    print('initial_prefetch_multiprocess_iterator_cached_id_queue_size',
+          iterator.initial_prefetch_multiprocess_iterator_cached_id_queue_size)
     print('launch_thread_time', iterator.launch_thread_time)
     print('start_generate_random_id_process_time', iterator.start_generate_random_id_process_time)
     start_prefetch_process_times = np.array(iterator.start_prefetch_process_times)
