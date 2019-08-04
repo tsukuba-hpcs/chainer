@@ -192,6 +192,10 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     def read_data_times(self):
         return self._prefetch_pipeline.read_data_times
 
+    @property
+    def start_prefetch_process_times(self):
+        return self._prefetch_pipeline.start_prefetch_process_times
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -348,6 +352,7 @@ class _PrefetchPipeline:
         self._generate_batch_times = []
         self._get_example_times = []
         self._read_data_times = []
+        self._start_prefetch_process_times = []
 
         self._allocate_shared_memory()
 
@@ -420,6 +425,10 @@ class _PrefetchPipeline:
     def read_data_times(self):
         return self._read_data_times
 
+    @property
+    def start_prefetch_process_times(self):
+        return self._start_prefetch_process_times
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_times = []
@@ -429,6 +438,7 @@ class _PrefetchPipeline:
         self._generate_batch_times = {}
         self._get_example_times = {}
         self._read_data_times = {}
+        self._start_prefetch_process_times = []
 
     def reset_all_counts(self):
         self._generate_batch_task_count = 0
@@ -575,6 +585,7 @@ class _PrefetchPipeline:
 
     def _prefetch_from_backend_loop(self):
         for _ in range(self.n_prefetch_from_backend):
+            start_process_timer = time.time()  # timer
             process = multiprocessing.Process(
                 target=_prefetch_from_backend,
                 args=[
@@ -586,6 +597,8 @@ class _PrefetchPipeline:
                 ]
             )
             process.start()
+            start_process_time = time.time() - start_process_timer  # timer
+            self._start_prefetch_process_times.append(start_process_time)  # timer
             self._prefetch_from_backend_pool.append(process)
 
     def _generate_batch_loop(self):

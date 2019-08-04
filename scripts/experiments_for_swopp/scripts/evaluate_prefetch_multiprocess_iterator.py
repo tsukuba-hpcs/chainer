@@ -90,12 +90,15 @@ def main():
     generate_batch_times = np.array(iterator.generate_batch_times)
     get_example_times = np.array(iterator.get_example_times)
     read_data_times = np.array(iterator.read_data_times)
+    start_prefetch_process_times = np.array(iterator.start_prefetch_process_times)
     print('generate_batch_times')
     desc(generate_batch_times)
     print('get_example_times')
     desc(get_example_times)
     print('read_data_times')
     desc(read_data_times)
+    print('start_prefetch_process_times')
+    desc(start_prefetch_process_times)
 
     prefetch_time = iterator.prefetch_time
     print('prefetch_time')
