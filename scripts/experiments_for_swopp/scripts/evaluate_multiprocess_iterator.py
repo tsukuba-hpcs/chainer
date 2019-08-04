@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--batch_size', type=int, required=True)
     parser.add_argument('--n_processes', type=int, required=True)
     parser.add_argument('--n_prefetch', type=int, required=True)
+    parser.add_argument('--n_remove_example', type=int)
 
     args = parser.parse_args()
 

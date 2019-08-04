@@ -32,9 +32,33 @@ echo 'finish copying imagenet'
 
 mkdir -p $log
 
-config=${config_base}/config_ssd_32_12_1000.json
-
+/usr/sbin/dropcaches 3
+config=${config_base}/config_ssd_32_2_1000.json
 python "${ROOT}/scripts/evaluate_multiprocess_iterator.py" \
-`config2args "${config}"` >> \
+`config2args "${config}"` > \
+"${log}/2"
+
+/usr/sbin/dropcaches 3
+config=${config_base}/config_ssd_32_4_1000.json
+python "${ROOT}/scripts/evaluate_multiprocess_iterator.py" \
+`config2args "${config}"` > \
+"${log}/4"
+
+/usr/sbin/dropcaches 3
+config=${config_base}/config_ssd_32_8_1000.json
+python "${ROOT}/scripts/evaluate_multiprocess_iterator.py" \
+`config2args "${config}"` > \
+"${log}/8"
+
+/usr/sbin/dropcaches 3
+config=${config_base}/config_ssd_32_12_1000.json
+python "${ROOT}/scripts/evaluate_multiprocess_iterator.py" \
+`config2args "${config}"` > \
 "${log}/12"
+
+/usr/sbin/dropcaches 3
+config=${config_base}/config_ssd_32_16_1000.json
+python "${ROOT}/scripts/evaluate_multiprocess_iterator.py" \
+`config2args "${config}"` > \
+"${log}/16"
 

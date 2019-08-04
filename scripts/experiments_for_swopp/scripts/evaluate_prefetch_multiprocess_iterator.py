@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--n_prefetch', type=int, required=True)
     parser.add_argument('--n_prefetch_from_backend', type=int, required=True)
     parser.add_argument('--n_generate_batch', type=int, required=True)
+    parser.add_argument('--n_remove_example', type=int)
 
     args = parser.parse_args()
     dataset = ExtendedLabeledImageDataset(

@@ -640,7 +640,7 @@ class _PrefetchPipeline:
             self.fetch_data_time = self.fetch_data_time + time.time() - fetch_data_timer
 
             unpack_and_organize_batch_timer = time.time()
-            batch = [_unpack(data, self.mem_bulk) for data in data_all]
+            batch = [_unpack(data[0], self.mem_bulk) for data in data_all]
             self.unpack_and_organize_batch_time = self.unpack_and_organize_batch_time + time.time() - \
                                                   unpack_and_organize_batch_timer
 
