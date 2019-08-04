@@ -70,6 +70,9 @@ def main():
     print('task_count', iterator.task_count)
     print('fetch_data_time', iterator.fetch_data_time)
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
+    print('launch_thread_time', iterator.launch_thread_time)
+    print('generate_batch_pool_time', iterator.generate_batch_pool_time)
+    print('generate_batch_thread_and_start_time', iterator.generate_batch_thread_and_start_time)
 
     fetch_run_times = np.array(iterator.fetch_run_times)
     get_example_times = np.array(iterator.get_example_times)

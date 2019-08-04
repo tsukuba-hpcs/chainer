@@ -240,6 +240,18 @@ class MultiprocessIterator(iterator.Iterator):
     def read_data_times(self):
         return self._prefetch_loop.read_data_times
 
+    @property
+    def launch_thread_time(self):
+        return self._prefetch_loop.launch_thread_time
+
+    @property
+    def generate_batch_pool_time(self):
+        return self._prefetch_loop.generate_batch_pool_time
+
+    @property
+    def generate_batch_thread_and_start_time(self):
+        return self._prefetch_loop.generate_batch_thread_and_start_time
+
     def serialize(self, serializer):
         current_position = serializer('current_position',
                                       self.current_position)
@@ -393,6 +405,9 @@ class _PrefetchLoop(object):
         self._fetch_run_times = []
         self._get_example_times = []
         self._read_data_times = []
+        self._launch_thread_time = 0
+        self._generate_batch_pool_time = 0
+        self._generate_batch_thread_and_start_time = 0
 
     def terminate(self):
         self._terminating = True
@@ -456,6 +471,18 @@ class _PrefetchLoop(object):
     def read_data_times(self):
         return self._read_data_times
 
+    @property
+    def launch_thread_time(self):
+        return self._launch_thread_time
+
+    @property
+    def generate_batch_pool_time(self):
+        return self._generate_batch_pool_time
+
+    @property
+    def generate_batch_thread_and_start_time(self):
+        return self._generate_batch_thread_and_start_time
+
     def reset_all_timers(self):
         self._task_time = 0
         self._fetch_data_time = 0
@@ -512,20 +539,27 @@ class _PrefetchLoop(object):
                 sharedctypes.RawArray('b', self.batch_size * self.mem_size)
 
     def launch_thread(self):
+        launch_thread_timer = time.time()  # timer
+        generate_batch_pool_timer = time.time()  # timer
         self._pool = multiprocessing.Pool(
             processes=self.n_processes,
             initializer=_fetch_setup,
             initargs=(self.dataset, self.mem_size, self.mem_bulk),
             maxtasksperchild=self.maxtasksperchild)
+        self._generate_batch_pool_time = time.time() - generate_batch_pool_timer  # timer
         if self._interruption_testing:
             pids = self._pool.map(_report_pid, range(self.n_processes))
             print(' '.join(map(str, pids)))
             sys.stdout.flush()
 
+        generate_batch_thread_and_start_timer = time.time()  # timer
         thread = threading.Thread(target=self._run, name='prefetch_loop')
         thread.setDaemon(True)
         thread.start()
+        self._generate_batch_thread_and_start_time = time.time() - generate_batch_thread_and_start_timer  # timer
+
         self._thread = thread
+        self._launch_thread_time = time.time() - launch_thread_timer  # timer
         return thread
 
     def _run(self):

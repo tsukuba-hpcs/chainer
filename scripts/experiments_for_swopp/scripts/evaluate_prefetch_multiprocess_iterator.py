@@ -85,13 +85,18 @@ def main():
     pp.pprint(cached_index_get_times.tolist())
     print('fetch_data_time', iterator.fetch_data_time)
     print('unpack_and_organize_batch_time', iterator.unpack_and_organize_batch_time)
+    print('launch_thread_time', iterator.launch_thread_time)
+    print('start_generate_random_id_process_time', iterator.start_generate_random_id_process_time)
+    start_prefetch_process_times = np.array(iterator.start_prefetch_process_times)
+    print('start_prefetch_process_times')
+    desc(start_prefetch_process_times)
     print('generate_batch_pool_time', iterator.generate_batch_pool_time)
     print('generate_batch_thread_and_start_time', iterator.generate_batch_thread_and_start_time)
 
     generate_batch_times = np.array(iterator.generate_batch_times)
     get_example_times = np.array(iterator.get_example_times)
     read_data_times = np.array(iterator.read_data_times)
-    start_prefetch_process_times = np.array(iterator.start_prefetch_process_times)
+
     print('generate_batch_times')
     desc(generate_batch_times)
     print('get_example_times')
@@ -99,7 +104,6 @@ def main():
     print('read_data_times')
     desc(read_data_times)
     print('start_prefetch_process_times')
-    desc(start_prefetch_process_times)
 
     prefetch_time = iterator.prefetch_time
     print('prefetch_time')

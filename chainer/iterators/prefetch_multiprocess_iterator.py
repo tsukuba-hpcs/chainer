@@ -204,6 +204,14 @@ class PrefetchMultiprocessIterator(iterator.Iterator):
     def generate_batch_thread_and_start_time(self):
         return self._prefetch_pipeline.generate_batch_thread_and_start_time
 
+    @property
+    def launch_thread_time(self):
+        return self._prefetch_pipeline.launch_thread_time
+
+    @property
+    def start_generate_random_id_process_time(self):
+        return self._prefetch_pipeline.start_generate_random_id_process_time
+
     def reset(self):
         order = self.order_sampler(numpy.arange(len(self.dataset)), 0)
         self._reset_state(0, 0, False, order)
@@ -363,6 +371,8 @@ class _PrefetchPipeline:
         self._start_prefetch_process_times = []
         self._generate_batch_pool_time = 0
         self._generate_batch_thread_and_start_time = 0
+        self._launch_thread_time = 0
+        self._start_generate_random_id_process_time = 0
 
         self._allocate_shared_memory()
 
@@ -447,6 +457,14 @@ class _PrefetchPipeline:
     def generate_batch_thread_and_start_time(self):
         return self._generate_batch_thread_and_start_time
 
+    @property
+    def launch_thread_time(self):
+        return self._launch_thread_time
+
+    @property
+    def start_generate_random_id_process_time(self):
+        return self._start_generate_random_id_process_time
+
     def reset_all_timers(self):
         self._generate_batch_task_time = 0
         self._cached_index_get_times = []
@@ -459,6 +477,8 @@ class _PrefetchPipeline:
         self._start_prefetch_process_times = []
         self._generate_batch_pool_time = 0
         self._generate_batch_thread_and_start_time = 0
+        self._launch_thread_time = 0
+        self._start_generate_random_id_process_time = 0
 
     def reset_all_counts(self):
         self._generate_batch_task_count = 0
@@ -511,11 +531,14 @@ class _PrefetchPipeline:
                 sharedctypes.RawArray('b', self.batch_size * self.mem_size)
 
     def launch_thread(self):
+        launch_thread_timer = time.time()  # timer
+
         global _prefetch_multiprocess_iterator_fetch_dataset
         global _prefetch_multiprocess_iterator_local_storage_base
         _prefetch_multiprocess_iterator_fetch_dataset = self.dataset
         _prefetch_multiprocess_iterator_local_storage_base = self.local_storage_base
 
+        start_generate_random_id_process_timer = time.time()  # timer
         self._generate_random_id_process = multiprocessing.Process(
             target=_generate_random_id_loop,
             args=[
@@ -531,6 +554,7 @@ class _PrefetchPipeline:
             daemon=True
         )
         self._generate_random_id_process.start()
+        self._start_generate_random_id_process_time = time.time() - start_generate_random_id_process_timer  # timer
 
         self._prefetch_from_backend_pool = []
         self._prefetch_from_backend_loop()
@@ -546,7 +570,7 @@ class _PrefetchPipeline:
                 _prefetch_multiprocess_iterator_local_storage_base
             )
         )
-        self._generate_batch_pool_time = time.time() - generate_batch_pool_timer
+        self._generate_batch_pool_time = time.time() - generate_batch_pool_timer  # timer
         generate_batch_thread_and_start_timer = time.time()  # timer
         self._generate_batch_thread = threading.Thread(
             target=self._generate_batch_loop,
@@ -571,6 +595,7 @@ class _PrefetchPipeline:
         '''
 
         self._launched = True
+        self._launch_thread_time = time.time() - launch_thread_timer  # timer
 
     def terminate(self):
         _prefetch_multiprocess_iterator_terminating.set()
@@ -621,9 +646,9 @@ class _PrefetchPipeline:
                 ]
             )
             process.start()
+            self._prefetch_from_backend_pool.append(process)
             start_process_time = time.time() - start_process_timer  # timer
             self._start_prefetch_process_times.append(start_process_time)  # timer
-            self._prefetch_from_backend_pool.append(process)
 
     def _generate_batch_loop(self):
         alive = True
