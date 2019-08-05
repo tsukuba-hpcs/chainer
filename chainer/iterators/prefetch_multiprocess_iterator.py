@@ -316,6 +316,7 @@ class _PrefetchPipeline:
     _prefetch_from_backend_thread = None
     _generate_batch_thread = None
     _remove_example_thread = None
+    _generate_prefetch_process_thread = None
     _remove_example_process = None
 
     _prefetch_from_backend_pool = []
@@ -567,8 +568,12 @@ class _PrefetchPipeline:
         self._generate_random_id_process.start()
         self._start_generate_random_id_process_time = time.time() - start_generate_random_id_process_timer  # timer
 
-        self._prefetch_from_backend_pool = []
-        self._prefetch_from_backend_loop()
+        self._generate_prefetch_process_thread = threading.Thread(
+            target=self._prefetch_from_backend_loop,
+            name='_generate_prefetch_process_thread'
+        )
+        self._generate_prefetch_process_thread.daemon = True
+        self._generate_prefetch_process_thread.start()
 
         generate_batch_pool_timer = time.time()  # timer
         self._generate_batch_pool = multiprocessing.Pool(
@@ -621,6 +626,7 @@ class _PrefetchPipeline:
                 process.terminate()
                 process.join()
             self._prefetch_from_backend_pool = None
+            self._generate_prefetch_process_thread.join()
 
         if self._remove_example_process is not None:
             self._remove_example_process.terminate()
@@ -644,6 +650,7 @@ class _PrefetchPipeline:
         self._launched = False
 
     def _prefetch_from_backend_loop(self):
+        self._prefetch_from_backend_pool = []
         for _ in range(self.n_prefetch_from_backend):
             start_process_timer = time.time()  # timer
             process = multiprocessing.Process(
