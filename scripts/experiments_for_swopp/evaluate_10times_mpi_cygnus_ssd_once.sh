@@ -2,7 +2,9 @@
 
 #PBS -A NBB
 #PBS -q gen_S
-#PBS -l elapstim_req=0:15:00
+#PBS -M nserihiro+cygnus@gmail.com
+#PBS -m e
+#PBS -l elapstim_req=1:00:00
 #PBS -v LD_LIBRARY_PATH=/work/NBB/serihiro/local/lib:/work/NBB/serihiro/local/lib64:$LD_LIBRARY_PATH
 
 module load cuda/10.1

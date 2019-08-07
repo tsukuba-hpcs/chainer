@@ -24,6 +24,18 @@ touch /work/NBB/serihiro/dummy
 cp /work/NBB/serihiro/dummy /scr/local_storage_base
 
 
+config="${config_base}/config_32_4_2_1000.json"
+rm -rf /scr/local_storage_base/*
+/usr/sbin/dropcaches 3
+
+python "${ROOT}/scripts/evaluate_prefetch_multiprocess_iterator.py" \
+`config2args "${config}"` \
+1> "${log}/4" \
+2>> "${log_stderr}/4"
+
+exit 0
+
+
 config="${config_base}/config_32_2_2_1000.json"
 rm -rf /scr/local_storage_base/*
 /usr/sbin/dropcaches 3
