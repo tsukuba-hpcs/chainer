@@ -218,9 +218,9 @@ class ExtendedLabeledImageDataset(LabeledImageDataset):
             # image is greyscale
             image = image[..., None]
         image = image.transpose(2, 0, 1)
-        get_example_time = time.time() - get_example_timer  # timer
 
         if self._measure:  # timer
+            get_example_time = time.time() - get_example_timer  # timer
             return image, label, file_read_time, get_example_time  # timer
         else:
             return image, label

@@ -11,10 +11,13 @@ from chainer.iterators.prefetch_multiprocess_iterator import PrefetchMultiproces
 
 
 def desc(data: np.ndarray):
-    print(f'n: {data.size}, sum: {data.sum()},'
-          f'min: {data.min()}, max: {data.max()},'
-          f'mean: {data.mean()}, median: {np.median(data)},'
-          f'var: {data.var()}')
+    try:
+        print(f'n: {data.size}, sum: {data.sum()},'
+              f'min: {data.min()}, max: {data.max()},'
+              f'mean: {data.mean()}, median: {np.median(data)},'
+              f'var: {data.var()}')
+    except ValueError:
+        print(f'ValueError is raised. {data} may be invalid')
 
 
 def main():
